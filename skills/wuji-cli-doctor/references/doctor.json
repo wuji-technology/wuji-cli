@@ -1,0 +1,109 @@
+{
+  "devices": [
+    {
+      "sn": "WG1KXXXXXXXXXXX",
+      "children": [
+        {
+          "id": "emf_disconnect",
+          "label": "EMF disconnect check",
+          "status": "fail",
+          "summary": "1 finger(s) abnormal",
+          "fix": "If the issue persists, it may indicate a faulty coil or module, please contact support",
+          "children": [
+            {
+              "label": "Thumb",
+              "status": "fail",
+              "summary": "RX receiver fault (coil / lead broken): 100/100 frames abnormal (100%)",
+              "children": [
+                {
+                  "label": "RX",
+                  "status": "fail",
+                  "summary": "receiver fault (coil / lead broken)"
+                }
+              ]
+            },
+            {
+              "label": "Index",
+              "status": "pass"
+            },
+            {
+              "label": "Middle",
+              "status": "pass"
+            },
+            {
+              "label": "Ring",
+              "status": "pass"
+            },
+            {
+              "label": "Pinky",
+              "status": "pass"
+            }
+          ]
+        },
+        {
+          "id": "tactile_dead_pixel",
+          "label": "tactile dead-pixel check",
+          "status": "warn",
+          "summary": "0 dead pixels, 1 bad row, 5 bad cols",
+          "fix": "Tactile check result is for reference only; verify via tactile heatmap in Wuji Studio",
+          "children": [
+            {
+              "label": "Thumb",
+              "status": "pass"
+            },
+            {
+              "label": "Index",
+              "status": "pass"
+            },
+            {
+              "label": "Middle",
+              "status": "pass"
+            },
+            {
+              "label": "Ring",
+              "status": "pass"
+            },
+            {
+              "label": "Pinky",
+              "status": "pass"
+            },
+            {
+              "label": "Palm",
+              "status": "pass"
+            },
+            {
+              "label": "Bad row 4",
+              "status": "warn",
+              "summary": "row 4 exceeds bad-line threshold"
+            },
+            {
+              "label": "Bad col 3",
+              "status": "warn",
+              "summary": "col 3 exceeds bad-line threshold"
+            },
+            {
+              "label": "Bad col 9",
+              "status": "warn",
+              "summary": "col 9 exceeds bad-line threshold"
+            },
+            {
+              "label": "Bad col 10",
+              "status": "warn",
+              "summary": "col 10 exceeds bad-line threshold"
+            },
+            {
+              "label": "Bad col 15",
+              "status": "warn",
+              "summary": "col 15 exceeds bad-line threshold"
+            },
+            {
+              "label": "Bad col 16",
+              "status": "warn",
+              "summary": "col 16 exceeds bad-line threshold"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
