@@ -7,6 +7,12 @@ and this project uses calendar versioning (YYYY.M.D).
 
 ## [Unreleased]
 
+## [2026.7.15]
+
+### Fixed
+
+- Fixed the install script exiting without installing agent skills.
+
 ## [2026.7.14]
 
 ### Added
@@ -22,5 +28,6 @@ and this project uses calendar versioning (YYYY.M.D).
 - Output formatting: most commands support `--json`/`--jsonl` output modes and device selection by `--sn`, `--address`, or `--handedness`.
 - Colored output: human-readable output uses consistent semantic colors for statuses, warnings, and values. Respects `NO_COLOR` and falls back to plain text on non-TTY output.
 
-[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.14...HEAD
+[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.15...HEAD
+[2026.7.15]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.14...v2026.7.15
 [2026.7.14]: https://github.com/wuji-technology/wuji-cli/releases/tag/v2026.7.14

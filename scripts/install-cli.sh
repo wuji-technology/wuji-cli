@@ -36,7 +36,7 @@ install_skills() {
         fallback_install_skills
     elif command -v npx >/dev/null 2>&1; then
         info "using npx to install skills"
-        npx -y skills add "${GITHUB_REPO}" || {
+        npx skills add "${GITHUB_REPO}" --all || {
             warn "npx skills add failed, trying install-skills.sh..."
             fallback_install_skills
         }
