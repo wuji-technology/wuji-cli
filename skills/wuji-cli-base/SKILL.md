@@ -3,7 +3,7 @@ name: wuji-cli-base
 description: "Interact with Wuji devices (data gloves / dexterous hands) via the wuji CLI: scan for devices (devices), probe connectivity with a handshake (ping), read and write device parameters (get/set), and subscribe to real-time data such as EMF, tactile, and IMU (sub). Use when you need to check device status, read sensor data, change device configuration, or write device automation scripts. For device health diagnostics, see wuji-cli-doctor. For firmware upgrades, see wuji-cli-upgrade."
 metadata:
   author: wuji-technology
-  version: "1.2"
+  version: "1.3"
   requires:
     bins: ["wuji"]
   cliHelp: "wuji --help"
@@ -25,8 +25,11 @@ metadata:
 | `wuji get <path>`          | Read a parameter (auto-decoded to JSON per schema)                      |
 | `wuji set <path> <value>`  | Write a parameter (value is JSON; `0x` prefix means raw hex bytes)      |
 | `wuji sub <topic>`         | Subscribe to real-time data (`--count N` exits after N frames)          |
+| `wuji calib ik`            | IK hand-model calibration (see the wuji-cli-calibrate skill)           |
+| `wuji calib tactile`       | Tactile contact-model calibration (see the wuji-cli-calibrate skill)   |
 | `wuji doctor`              | Device health self-check (see the wuji-cli-doctor skill)                |
 | `wuji upgrade`             | Firmware update check and upgrade (see the wuji-cli-upgrade skill)      |
+| `wuji user`                | Manage SDK users and export/import calibration data (see the wuji-cli-user skill) |
 | `wuji update`              | Update the CLI to the latest release (`--check` checks only)            |
 | `wuji completions <shell>` | Generate shell completion scripts                                       |
 

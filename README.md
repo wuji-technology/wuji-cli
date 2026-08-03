@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/wuji-technology/wuji-cli)](https://github.com/wuji-technology/wuji-cli/releases)
 
-Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, read/write parameters, subscribe to real-time topics, run health diagnostics, and upgrade firmware, all from the terminal.
+Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, read/write parameters, subscribe to real-time topics, calibrate tactile contact models, run health diagnostics, and upgrade firmware, all from the terminal.
 
 **Get started with [Quick Start](#quick-start). For detailed documentation, please refer to [Wuji Documentation Center](https://docs.wuji.tech/en).**
 
@@ -89,6 +89,12 @@ wuji set ip_address 192.168.1.100 --sn <SERIAL>
 ```bash
 wuji sub emf_poses --count 1
 wuji sub tactile --count 500 --jsonl > tactile.jsonl   # Record 500 frames to a file
+```
+
+### Tactile Calibration
+
+```bash
+wuji calib tactile --sn <SERIAL>
 ```
 
 ### Health Diagnostics
