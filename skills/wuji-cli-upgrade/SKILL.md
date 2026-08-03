@@ -18,7 +18,7 @@ Every invocation is a **scope** (which devices) combined with an **action** (wha
 Scope (defaults to the only connected device):
 
 - `--all` — every discovered device (latest firmware only)
-- `--type <TYPE>` — every device of one type (matches `ping`'s Device Type, case-insensitive)
+- `--type <TYPE>` — every device of one type (matches `ping`'s Device Type, case-insensitive, e.g. `--type wuji_glove`)
 - `--sn` / `--address` / `--handedness` — one device, same selectors as other commands
 
 Actions:
@@ -38,7 +38,7 @@ wuji upgrade --check                        # Which devices have updates (read-o
 wuji upgrade --all                          # Upgrade every device to its latest
 wuji upgrade --sn <SN>                      # Upgrade one device to its latest
 wuji upgrade --sn <SN> --to 0.11.0          # Install a specific version
-wuji upgrade --type WujiGlove --to 0.11.0   # Install a version on every glove
+wuji upgrade --type wuji_glove --to 0.11.0   # Install a version on every glove
 wuji upgrade --sn <SN> --list               # List firmware versions for one device
 wuji upgrade --file fw.zip                  # Flash a local package
 ```
@@ -68,9 +68,9 @@ $ wuji upgrade --check
 ┌──────────────────┬─────────────┬─────────┬────────┬──────────────────┐
 │ SN               ┆ Device Type ┆ Current ┆ Latest ┆ Status           │
 ╞══════════════════╪═════════════╪═════════╪════════╪══════════════════╡
-│ WG1KXXXXXXXXXX01 ┆ WujiGlove   ┆ 0.11.0  ┆ 0.11.1 ┆ update available │
+│ WG1KXXXXXXXXXX01 ┆ wuji_glove   ┆ 0.11.0  ┆ 0.11.1 ┆ update available │
 ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
-│ WG1KXXXXXXXXXX02 ┆ WujiGlove   ┆ 0.11.1  ┆ 0.11.1 ┆ up to date       │
+│ WG1KXXXXXXXXXX02 ┆ wuji_glove   ┆ 0.11.1  ┆ 0.11.1 ┆ up to date       │
 └──────────────────┴─────────────┴─────────┴────────┴──────────────────┘
 ```
 

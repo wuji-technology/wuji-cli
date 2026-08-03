@@ -13,7 +13,7 @@ metadata:
 
 Currently supported devices and fault types:
 
-- Wuji Glove
+- wuji_glove
   - EMF disconnect detection: pinpoints the affected finger and tells RX (receive) faults from TX (transmit) faults
   - Tactile sensor dead pixel / bad row / bad column detection (keep the glove static — don't wear or press it, or false positives may occur)
 
@@ -39,11 +39,11 @@ wuji doctor --json         # The same information as the tree report, as structu
 ```bash
 $ wuji doctor
 
-══════ Wuji Glove: WG1KXXXXXXXXXX01 ══════
+══════ wuji_glove: WG1KXXXXXXXXXX01 ══════
 ├─ ✔ EMF disconnect check: all 5 fingers normal
 └─ ! tactile dead-pixel check: 0 dead pixels, 0 bad rows, 0 bad cols
 
-══════ Wuji Glove: WG1KXXXXXXXXXX02 ══════
+══════ wuji_glove: WG1KXXXXXXXXXX02 ══════
 ├─ ✔ EMF disconnect check: all 5 fingers normal
 └─ ! tactile dead-pixel check: 0 dead pixels, 2 bad rows, 2 bad cols
    ├─ ! Bad rows: 2 bad row(s)
@@ -56,7 +56,7 @@ $ wuji doctor
 ```bash
 $ wuji doctor
 
-══════ Wuji Glove: WG1KXXXXXXXXXXX ══════
+══════ wuji_glove: WG1KXXXXXXXXXXX ══════
 ├─ ✔ EMF disconnect check: all 5 fingers normal
 └─ ! tactile dead-pixel check: 0 dead pixels, 0 bad rows, 1 bad col
    └─ ! Bad cols: 1 bad col(s)
@@ -64,7 +64,7 @@ $ wuji doctor
 
 $ wuji doctor -v
 
-══════ Wuji Glove: WG1KXXXXXXXXXXX ══════
+══════ wuji_glove: WG1KXXXXXXXXXXX ══════
 ├─ ✔ EMF disconnect check: all 5 fingers normal
 │  ├─ ✔ Thumb
 │  ├─ ✔ Index
