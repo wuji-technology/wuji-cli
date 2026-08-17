@@ -1,9 +1,9 @@
 ---
 name: wuji-cli-logs
-description: "Export, list, and locate Wuji device logs using `wuji logs`. Use when you need to collect log bundles for diagnostics (export), check what log files exist (list), or find the local log directory (path). Supports date-range filtering, source filtering (sdk/studio/stderr), device communication dumps, private-data redaction, and JSON output."
+description: "Export, list, dump, and locate Wuji device logs using `wuji logs`. Use when you need to collect support bundles including IK calibration recordings (export), collect a device-side diagnostic snapshot and flash history (dump), check what log files exist (list), or find the local log directory (path). Supports date-range filtering, source filtering (sdk/studio/stderr), device communication dumps, device diagnostic snapshots, private-data redaction, and JSON output."
 metadata:
   author: wuji-technology
-  version: "1.0"
+  version: "1.1"
   requires:
     bins: ["wuji"]
   cliHelp: "wuji logs --help"
@@ -13,9 +13,10 @@ metadata:
 
 - **Logs are local text files** written by Wuji SDK, Studio, and stderr capture, stored under `~/.wuji/logs/`. The CLI discovers and processes these files — it does not create them.
 - **Three text sources**: `sdk_*.log`, `studio_*.log`, `stderr_*.log`. Device communication dumps (`device_*.bin`) are excluded by default and gated behind `--with-dump`.
-- **Export produces a single ZIP** containing the selected log files, a host snapshot (`snapshot.json`), device diagnosis results (`diagnosis.json`), and a manifest (`manifest.json`). The snapshot and diagnosis are included even when no log files are found.
-- **Redaction is layered**: credentials (JWT, Bearer Token, API Key, Token, License, Password, AWS Key) are always redacted; private data (username, user paths, hostname, SSID, IPv4, MAC) is redacted by default and can be disabled via `--no-redact` (internal builds only).
-- **Exit codes**: 0 = success; 1 = any failure (device diagnosis error or log export failure).
+- **Export produces a single ZIP** containing the selected log files, a host snapshot (`host_snapshot.json`), doctor diagnosis results (`doctor_diagnosis.json` — environment checks under `env`, device discovery and per-device checks under `device`), device snapshots + flash history (`devices/<sn>_<ts>_device.json` / `_flash.jsonl`, when devices are found), matching IK calibration recordings, and a manifest (`manifest.json`). The snapshot and diagnosis are included even when no log files are found.
+- **Calibration recordings are automatic**: runs from `~/.wuji/calibration/recordings/` that intersect the same inclusive local-date range are copied under `calibration-recordings/<run_id>/`. Partial or legacy runs with no `ended_at` are filtered as a single point at their local `started_at` date.
+- **Redaction is layered**: credentials (JWT, Bearer Token, API Key, Token, License, Password, AWS Key) are always redacted; private data (username, user paths, hostname, SSID, IPv4, MAC) is redacted by default and can be disabled via `--no-redact` (internal builds only). Calibration `.mcap` files contain raw motion data and are never redacted.
+- **Exit codes**: 0 = success; 1 = any failure (device diagnosis error, log export failure, or device snapshot/flash collection failure in `dump`/`export`). Recoverable calibration run/file failures remain in the bundle manifest and do not change Human, JSON, or JSONL output or the exit status.
 
 ## Subcommands
 
@@ -23,7 +24,8 @@ metadata:
 | ------------------ | ---------------------------------------------------- |
 | `wuji logs path`   | Print the log directory path                         |
 | `wuji logs list`   | List available log files with size and date          |
-| `wuji logs export` | Export logs + snapshot + diagnosis into a ZIP bundle |
+| `wuji logs export` | Export logs, calibration recordings, snapshot, and diagnosis into a ZIP bundle |
+| `wuji logs dump`   | Collect a device-side diagnostic snapshot + flash history (Wuji Hand 2) |
 
 ## Common Usage
 
@@ -36,7 +38,7 @@ wuji logs list
 wuji logs list --days 7
 wuji logs list --source sdk,studio --days 3
 
-# Export a default bundle (last 1 day, all text sources)
+# Export a default bundle (last 1 day, all text sources and matching calibration runs)
 wuji logs export
 wuji logs export --days 7
 wuji logs export --source sdk --days 3
@@ -47,12 +49,19 @@ wuji logs export --with-dump
 # Write the ZIP to a specific path
 wuji logs export -o /tmp/support-bundle.zip
 
+# Collect a device-side diagnostic snapshot + flash history (Wuji Hand 2)
+wuji logs dump                          # scan all devices
+wuji logs dump --sn <SN>                # single device
+wuji logs dump --sn <SN> -o /tmp/dump   # write to a directory
+
 # JSON / JSONL output for scripting
 wuji logs export --json
 wuji logs export --jsonl
 wuji logs list --json
 wuji logs list --jsonl
 wuji logs path --json
+wuji logs dump --json
+wuji logs dump --jsonl
 ```
 
 ## Default ZIP Naming
@@ -67,13 +76,14 @@ wuji-logs-{env_id}-{timestamp}.zip
 
 ## Redaction Overview
 
-| Layer           | What is redacted                                      | Can be disabled?                         |
-| --------------- | ----------------------------------------------------- | ---------------------------------------- |
-| 🔴 Credentials  | JWT, Bearer Token, API Key, Token, License, Password, AWS Key | Never                                    |
-| 🟡 Private data | Username, user paths (`/home/alice`), Hostname, SSID, IPv4, MAC | Via `--no-redact` (internal builds only) |
-| 🟢 Preserved    | Device SN, firmware version, timestamps, error stacks | Always preserved                         |
+| Layer                  | What is redacted                                              | Can be disabled?                         |
+| ---------------------- | ------------------------------------------------------------- | ---------------------------------------- |
+| 🔴 Credentials         | JWT, Bearer Token, API Key, Token, License, Password, AWS Key | Never                                    |
+| 🟡 Private text data   | Username, user paths, hostname, SSID, IPv4, MAC                | Via `--no-redact` (internal builds only) |
+| 🟢 Preserved metadata  | Device SN, firmware version, timestamps, error stacks         | Always preserved                         |
+| ⚠️ Calibration motion | Nothing; `.mcap` files contain raw hand-motion data            | Not applicable                           |
 
-Redaction applies to text log files inside the ZIP. Binary dumps (`device_*.bin`) are not redacted. The host `snapshot.json` redacts hostname, machine ID, and MAC address.
+Redaction applies to text log files inside the ZIP. Binary dumps (`device_*.bin`) are not redacted. The host `host_snapshot.json` redacts hostname, machine ID, and MAC address. `doctor_diagnosis.json` and device-side data actively collected from the device (`devices/*_device.json`, `devices/*_flash.jsonl`) are **not** redacted and are included as-is — the diagnosis covers software versions, OS, network interface counts, device discovery, and per-device checks (no hostname / machine ID / MAC), and device data is not host private data. Calibration `.mcap` files also contain raw motion data and are not redacted — review the bundle before sharing.
 
 ## Typical Workflow
 
@@ -88,11 +98,16 @@ wuji logs export -o ~/Desktop/support.zip
 unzip -l ~/Desktop/support.zip
 # Expected structure:
 #   manifest.json
-#   snapshot.json
-#   diagnosis.json
+#   host_snapshot.json
+#   doctor_diagnosis.json
 #   logs/YYYY-MM-DD/sdk_*.log
 #   logs/YYYY-MM-DD/studio_*.log
 #   logs/YYYY-MM-DD/stderr_*.log
+#   devices/<sn>_<ts>_device.json   (device diagnostic snapshot, when devices found)
+#   devices/<sn>_<ts>_flash.jsonl   (device flash history, when devices found)
+#   calibration-recordings/<run_id>/manifest.json
+#   calibration-recordings/<run_id>/full.mcap
+#   calibration-recordings/<run_id>/steps/*.mcap  (completed steps only)
 ```
 
 ## Common Errors

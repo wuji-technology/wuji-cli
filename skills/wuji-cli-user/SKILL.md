@@ -53,7 +53,7 @@ wuji user create alice -d "Left-hand operator" --switch    # named profile is no
 wuji calib ik                       # calibration is allowed
 ```
 
-If IK calibration reports the default-user guidance (`create` / `switch` first), create and switch to a named profile, then retry. Tactile calibration does not require a named profile. Obtain confirmation before starting either calibration workflow (see the `wuji-cli-calibrate` skill).
+If IK calibration reports the default-user guidance (`create` / `switch` first), create and switch to a named profile, then retry. Tactile calibration does not require a named profile. Obtain confirmation before starting either calibration workflow (see the `wuji-cli-calib` skill).
 
 ## Exit Codes and JSON
 
@@ -70,6 +70,8 @@ If IK calibration reports the default-user guidance (`create` / `switch` first),
 | 9 | Cancelled at confirmation |
 
 With `--json`/`--jsonl`, success prints one document per command; errors print `{"error":{"code":N,"message":...}}`. Branch on `code` (and the process exit code), not on parsing the message text.
+
+`create`, `switch`, `rename`, and `delete` all report `current_user` — the active profile after the action, whether or not this action changed it. Read it from the command's own output instead of following up with `list --json`; the field is always present, so no branching on "did this affect me" is needed. `rename` also reports `previous_name`, so a script can confirm which profile it just renamed.
 
 ## Examples
 

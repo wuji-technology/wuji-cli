@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wuji CLI Calib"
+  short_description: "Guide safe Wuji Glove calibration workflows"
+  default_prompt: "Use $wuji-cli-calib to help me choose and safely run IK or tactile calibration for a Wuji Glove."

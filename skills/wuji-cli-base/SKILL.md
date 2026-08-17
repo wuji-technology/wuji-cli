@@ -25,8 +25,8 @@ metadata:
 | `wuji get <path>`          | Read a parameter (auto-decoded to JSON per schema)                      |
 | `wuji set <path> <value>`  | Write a parameter (value is JSON; `0x` prefix means raw hex bytes)      |
 | `wuji sub <topic>`         | Subscribe to real-time data (`--count N` exits after N frames)          |
-| `wuji calib ik`            | IK hand-model calibration (see the wuji-cli-calibrate skill)           |
-| `wuji calib tactile`       | Tactile contact-model calibration (see the wuji-cli-calibrate skill)   |
+| `wuji calib ik`            | IK hand-model calibration (see the wuji-cli-calib skill)               |
+| `wuji calib tactile`       | Tactile contact-model calibration (see the wuji-cli-calib skill)       |
 | `wuji doctor`              | Device health self-check (see the wuji-cli-doctor skill)                |
 | `wuji upgrade`             | Firmware update check and upgrade (see the wuji-cli-upgrade skill)      |
 | `wuji user`                | Manage SDK users and export/import calibration data (see the wuji-cli-user skill) |
