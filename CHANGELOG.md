@@ -7,11 +7,32 @@ and this project uses calendar versioning (YYYY.M.D).
 
 ## [Unreleased]
 
+## [2026.8.17]
+
+### Added
+
+- **Host environment diagnostics**: `wuji doctor` now checks host software versions, system info, and network interfaces before scanning for devices, and reports address-conflict issues found during the scan. **BREAKING**: under `--json`, the output is now organized by diagnosis layer — `env` (host environment checks) and `device` (device discovery listed as a generic entry without `sn`, plus per-device results) — replacing the old flat `system` / `devices` layout. Running with no device attached is now a normal exit (0 unless a host check fails) instead of an error.
+- **Wuji logs dump**: new subcommand collecting device-side diagnostic snapshots for Wuji Hand 2 devices — scans all devices by default or targets one via `--sn`/`--address`/`--handedness`. It captures identity, fault/status, bus voltage and temperature, communication diagnostics, and Flash KV history as `<sn>_<ts>_device.json` + `<sn>_<ts>_flash.jsonl`. Field failures land in the snapshot's `failures` list without aborting. The exit code is non-zero if any device failed.
+- **Device snapshots in support bundles**: `wuji logs export` now includes these device diagnostic snapshots and flash logs in the support bundle by default (under `devices/`), with no extra flag needed.
+- **IK calibration recordings in support bundles**: `wuji logs export` now automatically includes IK calibration runs from `~/.wuji/calibration/recordings/` that intersect the selected local-date range, including the manifest, the full recording, and the completed step recordings.
+- **Script-friendly JSON fields**: Added `missing_model_files` to `wuji user show --json` and a `detail` field on skipped component rows (reason: `incomplete_model`, `not_in_bundle`, or `not_declared_in_manifest`).
+
+### Changed
+
+- **Structured JSON errors**: Under `--json` / `--jsonl`, most command errors now print structured JSON to stderr, keeping stdout clean for scripts.
+- **Colored error labels**: Errors in human mode print a red `error:` label (rustc style), matching the existing `warning:` label.
+
+### Fixed
+
+- **Unknown resource paths**: `wuji get` with an unknown resource path now errors clearly instead of silently returning success without a value.
+- **Incomplete tactile models reported**: `wuji user export`, `import`, `import --preview`, and `show` now list an incomplete tactile model (missing `contact.safetensors`, `contact.npz`, or `contact.json`) as skipped, naming the device SN and missing files, instead of dropping it silently. Exporting only a partial model no longer claims there is no calibration data — the error names the device and files and points to `wuji calib tactile`.
+- **`--json` always reports `current_user`**: `wuji user create` / `switch` / `rename` / `delete` under `--json` now always report the resulting `current_user` (`rename` also reports `previous_name`), so scripts don't need a follow-up `user list`.
+
 ## [2026.8.3]
 
 ### Added
 
-- **Wuji Hand 2 support**: `wuji upgrade` supports firmware upgrades on second-generation hands with tactile sensors.
+- **Wuji Hand 2 support**: `wuji upgrade` supports firmware upgrades on Wuji Hand 2 with tactile sensors.
 - **Tactile calibration**: `wuji calib tactile` collects, trains, verifies, and installs a contact model for Wuji Glove, with a `--non-interactive` mode for hands-off runs.
 - **Hand-model calibration**: `wuji calib ik` guides device selection, live pose, and reference images, then saves and hot-reloads the completed model for the active profile. It builds a hand model that matches your physical hand, so pinches, four-finger bends, and other gestures produce expected output on your Wuji Glove.
 - **User profiles**: `wuji user` manages calibration profiles for Wuji Glove, creating, describing, switching, listing, showing, renaming, and deleting profiles, and importing or exporting their IK and tactile calibration data. Results are stored per profile and per hand, so gloves on the same hand share one result under the same profile.
@@ -43,7 +64,8 @@ and this project uses calendar versioning (YYYY.M.D).
 - Output formatting: most commands support `--json`/`--jsonl` output modes and device selection by `--sn`, `--address`, or `--handedness`.
 - Colored output: human-readable output uses consistent semantic colors for statuses, warnings, and values. Respects `NO_COLOR` and falls back to plain text on non-TTY output.
 
-[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.3...HEAD
+[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.17...HEAD
+[2026.8.17]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.3...v2026.8.17
 [2026.8.3]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.15...v2026.8.3
 [2026.7.15]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.14...v2026.7.15
 [2026.7.14]: https://github.com/wuji-technology/wuji-cli/releases/tag/v2026.7.14

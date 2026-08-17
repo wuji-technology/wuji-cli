@@ -1,9 +1,9 @@
 ---
-name: wuji-cli-calibrate
+name: wuji-cli-calib
 description: "Guide safe Wuji Glove calibration with the wuji CLI. Use when the user asks to run or monitor `wuji calib ik` or `wuji calib tactile`, interpret calibration progress or errors, cancel an active calibration, inspect the resulting IK model, or choose between IK and tactile calibration. Route each mode without applying IK's user-and-hand model rules to tactile's device-specific model."
 ---
 
-# Wuji CLI Calibrate
+# Wuji CLI Calib
 
 Route calibration requests to the correct workflow and keep the human in the loop for physical actions and persistent model changes.
 

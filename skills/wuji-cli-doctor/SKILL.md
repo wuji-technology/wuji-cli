@@ -30,7 +30,7 @@ wuji doctor --json         # The same information as the tree report, as structu
 
 - Status: ✔ pass / ! warn (informational anomaly) / ✘ fail (confirmed fault) / ~ skip
 - `Tip:` lines are fix suggestions
-- Exit code: 0 = no fail (warns allowed); 1 = a fail exists or diagnosis couldn't complete, directly usable in scripts
+- Exit code: 0 = no fail (warns allowed); 1 = a fail exists or diagnosis couldn't complete, directly usable in scripts. No device attached is not an error — the host-environment and discovery checks still run and determine the exit code.
 - Tactile check results are for reference only (capped at warn); verify via tactile heatmap in Wuji Studio
 - Devices that fail to diagnose show up in the report as a ✘ connect & diagnose node
 
@@ -38,6 +38,25 @@ wuji doctor --json         # The same information as the tree report, as structu
 
 ```bash
 $ wuji doctor
+
+ ══════ Environment ══════
+~ Software: version info incomplete
+├─ ✔ CLI: 2026.8.3 (up to date)
+├─ ~ SDK: not installed or version undetectable (skipped)
+└─ ✔ Studio: 2026.8.3 (up to date)
+
+✔ System: supported
+└─ ✔ OS: Ubuntu 26.04 (supported)
+
+! Network interfaces: 2 interfaces, see interface count
+├─ ✔ eth0 (192.168.1.100/24, fe80::abcd:.../64)
+└─ ! Interface count: 2 interfaces — multiple interfaces may cause routing issues
+
+══════ Generic ══════
+✔ Device discovery: 2 device(s) found, no issues
+├─ ✔ Devices found: 2 device(s) found
+├─ ✔ Duplicate device IP
+└─ ✔ Host subnet
 
 ══════ wuji_glove: WG1KXXXXXXXXXX01 ══════
 ├─ ✔ EMF disconnect check: all 5 fingers normal
@@ -51,7 +70,7 @@ $ wuji doctor
    Tip: Tactile check result is for reference only; verify via tactile heatmap in Wuji Studio
 ```
 
-`wuji doctor -v` lists every check item (passing items are hidden by default; add -v to show them all)
+`wuji doctor -v` lists every check item (passing items are hidden by default; add -v to show them all). Device sections only — the Environment / Generic sections shown above are omitted here for brevity (they are printed before the devices in real output):
 
 ```bash
 $ wuji doctor
@@ -82,29 +101,121 @@ $ wuji doctor -v
    Tip: Tactile check result is for reference only; verify via tactile heatmap in Wuji Studio
 ```
 
-`wuji doctor --json` outputs the same information as the tree report in machine-readable form (one node per check item, nested via `children`), handy for scripting
+`wuji doctor --json` outputs the same information as the tree report in machine-readable form. The top-level object has two arrays:
+
+- `env`: host-environment checks — software versions (CLI / SDK / Studio), system, and network interfaces, each a check node (nested via `children`)
+- `device`: device-layer results — a `Generic` entry without `sn` holding the device-discovery check (added whenever a scan ran, even when no device is found), then one entry per device (`label` + `sn` + check tree)
+
+Each array is omitted only when it is empty: `env` is always present online; `device` is present whenever a scan ran or a device was targeted. Example:
 
 ```bash
 $ wuji doctor --json
 
 {
-  "devices": [
+  "env": [
     {
+      "id": "env_software",
+      "label": "Software",
+      "status": "warn",
+      "summary": "updates available or unable to verify latest",
+      "children": [
+        {
+          "label": "CLI",
+          "status": "warn",
+          "summary": "2026.8.3 (unable to check latest version)"
+        },
+        {
+          "label": "SDK",
+          "status": "skip",
+          "summary": "not installed or version undetectable (skipped)"
+        },
+        {
+          "label": "Studio",
+          "status": "pass",
+          "summary": "2026.8.3 (up to date)"
+        }
+      ]
+    },
+    {
+      "id": "env_system",
+      "label": "System",
+      "status": "pass",
+      "summary": "supported",
+      "children": [
+        {
+          "label": "OS",
+          "status": "pass",
+          "summary": "Ubuntu 26.04 (supported)"
+        }
+      ]
+    }
+  ],
+  "device": [
+    {
+      "label": "Generic",
+      "children": [
+        {
+          "id": "device_discovery",
+          "label": "Device discovery",
+          "status": "pass",
+          "summary": "1 device(s) found, no issues",
+          "children": [
+            {
+              "label": "Devices found",
+              "status": "pass",
+              "summary": "1 device(s) found"
+            },
+            {
+              "label": "Duplicate device IP",
+              "status": "pass"
+            },
+            {
+              "label": "Host subnet",
+              "status": "pass"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "wuji_glove",
       "sn": "WG1KXXXXXXXXXXX",
       "children": [
         {
           "id": "emf_disconnect",
           "label": "EMF disconnect check",
           "status": "pass",
-          "summary": "sampled 100 valid frames, all 5 fingers normal",
+          "summary": "all 5 fingers normal",
           "children": [
             {
               "label": "Thumb",
               "status": "pass",
-              "summary": "100 frames all normal"
+              "summary": "normal"
             },
-...
-
+            {
+              "label": "Index",
+              "status": "pass",
+              "summary": "normal"
+            },
+            {
+              "label": "Middle",
+              "status": "pass",
+              "summary": "normal"
+            },
+            {
+              "label": "Ring",
+              "status": "pass",
+              "summary": "normal"
+            },
+            {
+              "label": "Pinky",
+              "status": "pass",
+              "summary": "normal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
 ```
-
-See [doctor.json](references/doctor.json) for the full output
