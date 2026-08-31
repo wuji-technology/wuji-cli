@@ -7,6 +7,27 @@ and this project uses calendar versioning (YYYY.M.D).
 
 ## [Unreleased]
 
+## [2026.8.31]
+
+### Added
+
+- Added `wuji viz` live visualization for viewing Wuji Hand 2 poses and fingertip tactile data.
+
+### Changed
+
+- Removed `wuji calib ik` without a compatibility alias. **BREAKING**: Update scripts and automation to use `wuji calib hand-model`. Calibration behavior and tactile calibration are unchanged.
+- Improved `wuji calib hand-model` with clearer step-by-step guidance, pose feedback, and result presentation throughout calibration.
+- Improved `wuji user` with a clearer, more consistent terminal experience for managing profiles and moving calibration data.
+- Updated `wuji calib hand-model` JSON and JSONL events to use `schema_version: 2` and `calibration: "hand_model"`. **BREAKING**: Update JSON consumers from schema version `1` and `"ik"`, and handle `legacy_hand_model_ignored` and `default_user_hand_model_disabled` values from `wuji user import`.
+- Rejected invalid `wuji upgrade --file` firmware files locally with a clear error before they reach the device.
+
+### Fixed
+
+- Fixed Windows firmware downloads to resolve the Windows user profile without requiring the Unix-only `HOME` variable. Calibration export failures now use stable `/` separators across platforms.
+- Updated the one-click installer to install agent skills in the user-global location, making them available across projects.
+- Updated `wuji doctor` to report devices without a matching diagnostic recipe, such as Wuji Hand 2, as skipped instead of failed. Genuine connection or collection failures still report as failed and exit 1.
+- Added support for non-UTF-8 log directory names in `wuji logs list` and `wuji logs export`.
+
 ## [2026.8.17]
 
 ### Added
@@ -64,7 +85,8 @@ and this project uses calendar versioning (YYYY.M.D).
 - Output formatting: most commands support `--json`/`--jsonl` output modes and device selection by `--sn`, `--address`, or `--handedness`.
 - Colored output: human-readable output uses consistent semantic colors for statuses, warnings, and values. Respects `NO_COLOR` and falls back to plain text on non-TTY output.
 
-[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.17...HEAD
+[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.31...HEAD
+[2026.8.31]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.17...v2026.8.31
 [2026.8.17]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.3...v2026.8.17
 [2026.8.3]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.15...v2026.8.3
 [2026.7.15]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.14...v2026.7.15

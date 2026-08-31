@@ -28,11 +28,12 @@ wuji doctor --json         # The same information as the tree report, as structu
 
 ## Reading the Report
 
-- Status: ✔ pass / ! warn (informational anomaly) / ✘ fail (confirmed fault) / ~ skip
+- Status: ✔ pass / ! warn (informational anomaly) / ✘ fail (confirmed fault) / ~ skip (the check didn't apply or couldn't run)
 - `Tip:` lines are fix suggestions
-- Exit code: 0 = no fail (warns allowed); 1 = a fail exists or diagnosis couldn't complete, directly usable in scripts. No device attached is not an error — the host-environment and discovery checks still run and determine the exit code.
-- Tactile check results are for reference only (capped at warn); verify via tactile heatmap in Wuji Studio
-- Devices that fail to diagnose show up in the report as a ✘ connect & diagnose node
+- Exit code: 0 = no fail (warns allowed). 1 = a fail exists or diagnosis couldn't complete, directly usable in scripts. No device attached is not an error — the host-environment and discovery checks still run and determine the exit code.
+- Tactile check results are for reference only (capped at warn). Verify via tactile heatmap in Wuji Studio
+- Duplicate device IP and host-subnet checks run only when discovery finds a UDP device. If every device uses USB or Zenoh, both checks show `~ not attempted: no UDP devices`. These skipped checks don't make the exit code 1.
+- Devices without a diagnostic recipe show a ~ connect & diagnose node. This skipped node doesn't make the exit code 1. Connection or data-collection failures still show ✘ and return 1.
 
 ## Examples
 
@@ -67,10 +68,10 @@ $ wuji doctor
 └─ ! tactile dead-pixel check: 0 dead pixels, 2 bad rows, 2 bad cols
    ├─ ! Bad rows: 2 bad row(s)
    └─ ! Bad cols: 2 bad col(s)
-   Tip: Tactile check result is for reference only; verify via tactile heatmap in Wuji Studio
+   Tip: Tactile check result is for reference only. Verify via tactile heatmap in Wuji Studio
 ```
 
-`wuji doctor -v` lists every check item (passing items are hidden by default; add -v to show them all). Device sections only — the Environment / Generic sections shown above are omitted here for brevity (they are printed before the devices in real output):
+`wuji doctor -v` lists every check item. Passing items are hidden by default, so add `-v` to show them all. Device sections only — the Environment / Generic sections shown above are omitted here for brevity (they are printed before the devices in real output):
 
 ```bash
 $ wuji doctor
@@ -79,7 +80,7 @@ $ wuji doctor
 ├─ ✔ EMF disconnect check: all 5 fingers normal
 └─ ! tactile dead-pixel check: 0 dead pixels, 0 bad rows, 1 bad col
    └─ ! Bad cols: 1 bad col(s)
-   Tip: Tactile check result is for reference only; verify via tactile heatmap in Wuji Studio
+   Tip: Tactile check result is for reference only. Verify via tactile heatmap in Wuji Studio
 
 $ wuji doctor -v
 
@@ -98,7 +99,7 @@ $ wuji doctor -v
    ├─ ✔ Pinky
    ├─ ✔ Palm
    └─ ! Bad cols: 1 bad col(s)
-   Tip: Tactile check result is for reference only; verify via tactile heatmap in Wuji Studio
+   Tip: Tactile check result is for reference only. Verify via tactile heatmap in Wuji Studio
 ```
 
 `wuji doctor --json` outputs the same information as the tree report in machine-readable form. The top-level object has two arrays:
@@ -106,7 +107,9 @@ $ wuji doctor -v
 - `env`: host-environment checks — software versions (CLI / SDK / Studio), system, and network interfaces, each a check node (nested via `children`)
 - `device`: device-layer results — a `Generic` entry without `sn` holding the device-discovery check (added whenever a scan ran, even when no device is found), then one entry per device (`label` + `sn` + check tree)
 
-Each array is omitted only when it is empty: `env` is always present online; `device` is present whenever a scan ran or a device was targeted. Example:
+Each array is omitted only when it is empty. `env` is always present online. `device` is present whenever a scan ran or a device was targeted. Example:
+
+The example assumes discovery found a UDP device. With only USB or Zenoh devices, the discovery node and both IP checks use `"status": "skip"`, and the summary states that no UDP device was found.
 
 ```bash
 $ wuji doctor --json
