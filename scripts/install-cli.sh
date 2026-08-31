@@ -36,7 +36,7 @@ install_skills() {
         fallback_install_skills
     elif command -v npx >/dev/null 2>&1; then
         info "using npx to install skills"
-        npx skills add "${GITHUB_REPO}" --all || {
+        npx --yes skills add "${GITHUB_REPO}" -g -y || {
             warn "npx skills add failed, trying install-skills.sh..."
             fallback_install_skills
         }
@@ -85,13 +85,15 @@ ensure_path() {
     esac
 }
 
-# Detect system architecture
-detect_arch() {
+# Detect the release target for this system.
+detect_target() {
+    os=$(uname -s)
     arch=$(uname -m)
-    case "$arch" in
-        x86_64|amd64)  echo "amd64" ;;
-        aarch64|arm64) echo "arm64" ;;
-        *) error "unsupported arch: $arch" ;;
+    case "$os:$arch" in
+        Linux:x86_64|Linux:amd64)   echo "x86_64-unknown-linux-gnu" ;;
+        Linux:aarch64|Linux:arm64)  echo "aarch64-unknown-linux-gnu" ;;
+        Darwin:aarch64|Darwin:arm64) echo "aarch64-apple-darwin" ;;
+        *) error "unsupported platform: $os/$arch" ;;
     esac
 }
 
@@ -123,18 +125,11 @@ resolve_latest_version() {
     echo "${tag#v}"
 }
 
-# Verify the downloaded binary against the sha256 digest that GitHub
+# Verify the downloaded archive against the sha256 digest that GitHub
 # publishes for each release asset (same trust anchor as `wuji update`).
-# Cannot fetch the expected digest → warn and continue (HTTPS already
-# protects the transport); digest fetched but mismatched → hard fail.
 verify_sha256() {
     file="$1"
     asset="$2"
-
-    if ! command -v sha256sum >/dev/null 2>&1; then
-        warn "sha256sum not found, skipping checksum verification"
-        return 0
-    fi
 
     api_url="https://api.github.com/repos/${GITHUB_REPO}/releases/tags/v${VERSION}"
     # Asset objects list "name" before "digest"; scan line by line and take
@@ -151,11 +146,16 @@ verify_sha256() {
         }')
 
     if [ -z "$expected" ]; then
-        warn "cannot fetch checksum from GitHub API, skipping verification"
-        return 0
+        error "cannot fetch the SHA-256 digest for $asset from GitHub API"
     fi
 
-    actual=$(sha256sum "$file" | awk '{print $1}')
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual=$(sha256sum "$file" | awk '{print $1}')
+    elif command -v shasum >/dev/null 2>&1; then
+        actual=$(shasum -a 256 "$file" | awk '{print $1}')
+    else
+        error "need sha256sum or shasum to verify $asset"
+    fi
     if [ "$actual" != "$expected" ]; then
         error "sha256 mismatch for $asset: expected $expected, got $actual (corrupted download, please retry the installation)"
     fi
@@ -167,12 +167,13 @@ main() {
     # Check prerequisites
     need_cmd uname
     need_cmd mktemp
+    need_cmd tar
     if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
         error "need curl or wget"
     fi
 
-    # Detect architecture
-    ARCH=$(detect_arch) || exit 1
+    # Detect the exact release target (OS + architecture).
+    TARGET=$(detect_target) || exit 1
 
     DEST="${INSTALL_DIR}/${BINARY_NAME}"
 
@@ -184,25 +185,37 @@ main() {
             info "latest version: $VERSION"
         fi
 
-        URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${BINARY_NAME}_${VERSION}_${ARCH}"
+        ASSET="${BINARY_NAME}_${VERSION}_${TARGET}.tar.gz"
+        URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${ASSET}"
 
         TMP_DIR=$(mktemp -d)
         trap 'rm -rf "$TMP_DIR"' EXIT  # ensure cleanup
-        TMPFILE="$TMP_DIR/$BINARY_NAME"
+        TMPFILE="$TMP_DIR/$ASSET"
+        EXTRACT_DIR="$TMP_DIR/extract"
 
         info "downloading $URL to $TMPFILE"
 
         download "$URL" "$TMPFILE" || error "download failed, please try again later"
 
-        verify_sha256 "$TMPFILE" "${BINARY_NAME}_${VERSION}_${ARCH}"
+        verify_sha256 "$TMPFILE" "$ASSET"
+
+        entries=$(tar -tzf "$TMPFILE") || error "cannot read $ASSET"
+        [ "$entries" = "$BINARY_NAME" ] || error "$ASSET must contain exactly one root-level $BINARY_NAME"
+        mkdir -p "$EXTRACT_DIR" || error "cannot create extraction directory"
+        EXTRACTED="$EXTRACT_DIR/$BINARY_NAME"
+        tar -xOzf "$TMPFILE" > "$EXTRACTED" || error "cannot extract $ASSET"
+        [ -f "$EXTRACTED" ] || error "$ASSET does not contain a regular $BINARY_NAME binary"
 
         # Install binary
+        chmod +x "$EXTRACTED"
+        reported_version=$("$EXTRACTED" --version 2>/dev/null | awk '{print $NF}')
+        [ "$reported_version" = "$VERSION" ] || error "$BINARY_NAME reports version '${reported_version:-<missing>}', expected '$VERSION'"
+
         mkdir -p "$INSTALL_DIR" || error "cannot create $INSTALL_DIR"
-        chmod +x "$TMPFILE"
 
-        info "installing $TMPFILE to $DEST"
+        info "installing $EXTRACTED to $DEST"
 
-        mv "$TMPFILE" "$DEST" || error "cannot install to $DEST (is $INSTALL_DIR writable?)"
+        mv "$EXTRACTED" "$DEST" || error "cannot install to $DEST (is $INSTALL_DIR writable?)"
 
         echo ""
         success "wuji-cli installed to $DEST"
@@ -223,7 +236,7 @@ main() {
         install_skills
     else
         info "Skipped. Install skills later via:"
-        info "  npx skills add ${GITHUB_REPO}"
+        info "  npx skills add ${GITHUB_REPO} -g"
         info "  curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPO}/main/scripts/install-skills.sh | sh"
     fi
 

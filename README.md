@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/wuji-technology/wuji-cli)](https://github.com/wuji-technology/wuji-cli/releases)
 
-Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, read/write parameters, subscribe to real-time topics, calibrate tactile contact models, run health diagnostics, and upgrade firmware, all from the terminal.
+Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, read/write parameters, subscribe to real-time topics, visualize Wuji Hand 2 data, calibrate tactile contact models, run health diagnostics, and upgrade firmware, all from the terminal.
 
 **Get started with [Quick Start](#quick-start). For detailed documentation, please refer to [Wuji Documentation Center](https://docs.wuji.tech/en).**
 
@@ -10,24 +10,23 @@ Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, r
 
 ### Prerequisites
 
-- Ubuntu 22.04+ 
+- Linux x86_64/ARM64, Windows x86_64, or Apple Silicon macOS
 - Devices must be on the same local network (UDP) or connected via USB
 
 ### Installation
 
 #### CLI Installation
 
-use the install script (Recommended):
+On Linux or Apple Silicon macOS:
 
 ```bash
 curl -fsSL https://get.wuji.tech/cli | bash
 ```
 
-Alternatively, download the latest binary from [Releases](https://github.com/wuji-technology/wuji-cli/releases), then install it:
+On Windows x86_64:
 
-```bash
-sudo cp wuji_<version>_<arch> /usr/local/bin/wuji
-sudo chmod +x /usr/local/bin/wuji 
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/wuji-technology/wuji-cli/main/scripts/install-cli.ps1 | iex"
 ```
 
 #### Skills Installation
@@ -35,7 +34,7 @@ sudo chmod +x /usr/local/bin/wuji
 use npx to install skills:
 
 ```bash
-npx skills add wuji-technology/wuji-cli
+npx skills add wuji-technology/wuji-cli -g
 ```
 
 Alternatively, use the install script:
@@ -91,6 +90,19 @@ wuji sub emf_poses --count 1
 wuji sub tactile --count 500 --jsonl > tactile.jsonl   # Record 500 frames to a file
 ```
 
+### Visualize Wuji Hand 2
+
+```bash
+wuji viz                            # Select a hand if needed, zero tactile sensors, then open the Viewer
+wuji viz --sn <SERIAL>              # Select a specific hand
+wuji viz --no-zero                  # Skip runtime tactile zeroing
+wuji viz --no-open                  # Print the URL without opening a browser
+wuji viz --lan                      # Bind to a private address on the default route
+wuji viz --bind 10.42.0.7           # Bind to a specific local address, such as a VPN
+```
+
+The viewer shows the live joint pose, on-hand fingertip forces, five fingertip panels, per-finger resultant forces, and a rolling 60-second force chart. By default, the command captures the current unloaded readings as the runtime tactile zero before opening the Viewer. Keep all five fingertip surfaces completely unloaded until the terminal reports that zeroing is ready. Use `--no-zero` to keep startup read-only whenever you cannot confirm that unloaded state or do not need a new runtime zero. The viewer binds to loopback by default. Use `--lan` to select a private address on the default route, or `--bind <IP>` to select a specific local address. Non-loopback access has no authentication or TLS and must be used only on a trusted network.
+
 ### Tactile Calibration
 
 ```bash
@@ -126,7 +138,7 @@ The CLI also checks for new releases in the background, at most once every 24 ho
 
 ### Scripting
 
-Most commands accept `--json` for structured output. The exit code is 0 on success and nonzero on failure, so scripts can gate on it directly.
+Most commands accept `--json` for structured output. `wuji viz` accepts `--json` and `--jsonl`; after the Viewer is ready, it writes one startup report to stdout. Live sensor frames are sent only to Rerun, while progress and errors are written to stderr. The exit code is 0 on success and nonzero on failure, so scripts can gate on it directly.
 
 ### Shell Completions
 
