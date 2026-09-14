@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/wuji-technology/wuji-cli)](https://github.com/wuji-technology/wuji-cli/releases)
 
-Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, read/write parameters, subscribe to real-time topics, visualize Wuji Hand 2 and Wuji Glove data, calibrate tactile contact models, run health diagnostics, and upgrade firmware, all from the terminal.
+Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, read/write parameters, subscribe to real-time topics, visualize Wuji Hand 2 data, calibrate tactile contact models, run health diagnostics, and upgrade firmware, all from the terminal.
 
 **Get started with [Quick Start](#quick-start). For detailed documentation, please refer to [Wuji Documentation Center](https://docs.wuji.tech/en).**
 
@@ -90,22 +90,18 @@ wuji sub emf_poses --count 1
 wuji sub tactile --count 500 --jsonl > tactile.jsonl   # Record 500 frames to a file
 ```
 
-### Visualize Wuji Hand 2 or Wuji Glove
+### Visualize Wuji Hand 2
 
 ```bash
-wuji viz                            # Select a Hand 2 or Glove if needed, then open the Viewer
-wuji viz --sn <SERIAL>              # Select a specific Hand 2 or Glove
-wuji viz --no-zero                  # Skip runtime tactile zeroing for a tactile-equipped Hand 2
+wuji viz                            # Select a hand if needed, zero tactile sensors, then open the Viewer
+wuji viz --sn <SERIAL>              # Select a specific hand
+wuji viz --no-zero                  # Skip runtime tactile zeroing
 wuji viz --no-open                  # Print the URL without opening a browser
 wuji viz --lan                      # Bind to a private address on the default route
 wuji viz --bind 10.42.0.7           # Bind to a specific local address, such as a VPN
 ```
 
-`wuji viz` opens a live Rerun Viewer for Wuji Hand 2 and Wuji Glove, showing the hand pose and
-available sensor data. Before starting a tactile-equipped Hand 2 without `--no-zero`, make sure all
-five fingertips are completely unloaded and keep them unloaded until the terminal reports
-`Tactile zero: ready.` If you cannot confirm that or do not need a new zero, use `--no-zero`; Wuji
-Glove does not perform tactile zeroing.
+The viewer shows the live joint pose, on-hand fingertip forces, five fingertip panels, per-finger resultant forces, and a rolling 60-second force chart. By default, the command captures the current unloaded readings as the runtime tactile zero before opening the Viewer. Keep all five fingertip surfaces completely unloaded until the terminal reports that zeroing is ready. Use `--no-zero` to keep startup read-only whenever you cannot confirm that unloaded state or do not need a new runtime zero. The viewer binds to loopback by default. Use `--lan` to select a private address on the default route, or `--bind <IP>` to select a specific local address. Non-loopback access has no authentication or TLS and must be used only on a trusted network.
 
 ### Tactile Calibration
 

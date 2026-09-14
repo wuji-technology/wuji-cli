@@ -1,4 +1,4 @@
 interface:
   display_name: "Wuji CLI Viz"
-  short_description: "Visualize live Wuji Hand 2 or Glove data in Rerun"
-  default_prompt: "Use $wuji-cli-viz to start or troubleshoot a live Rerun Web Viewer for one Wuji Hand 2 or Wuji Glove."
+  short_description: "Visualize live Wuji Hand 2 data in Rerun"
+  default_prompt: "Use $wuji-cli-viz to start or troubleshoot a live Rerun Web Viewer for one Wuji Hand 2."
