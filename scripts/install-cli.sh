@@ -28,25 +28,9 @@ prompt_yesno() {
     esac
 }
 
-# Install Agent skills — prefer npx (unless WUJI_SKILLS_USE_SCRIPT=1), fallback to install-skills.sh
+# Fetch and run install-skills.sh from the public repo
 install_skills() {
     SKILLS_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/scripts/install-skills.sh"
-    if [ "${WUJI_SKILLS_USE_SCRIPT:-}" = "1" ]; then
-        info "WUJI_SKILLS_USE_SCRIPT set, using install-skills.sh"
-        fallback_install_skills
-    elif command -v npx >/dev/null 2>&1; then
-        info "using npx to install skills"
-        npx --yes skills add "${GITHUB_REPO}" -g -y || {
-            warn "npx skills add failed, trying install-skills.sh..."
-            fallback_install_skills
-        }
-    else
-        info "using install-skills.sh to install skills"
-        fallback_install_skills
-    fi
-}
-
-fallback_install_skills() {
     _tmpfile=$(mktemp) || { warn "cannot create temp file"; return; }
 
     if command -v curl >/dev/null 2>&1; then
@@ -61,11 +45,7 @@ fallback_install_skills() {
 
     [ -s "$_tmpfile" ] || { warn "skills download empty, skipping"; rm -f "$_tmpfile"; return; }
 
-    if sh "$_tmpfile"; then
-        info "If your AI agent cannot find Skills, tell it to check ~/.agents/skills/wuji-*"
-    else
-        warn "skills installation failed, skipping"
-    fi
+    sh "$_tmpfile" || warn "skills installation failed, skipping"
     rm -f "$_tmpfile"
 }
 

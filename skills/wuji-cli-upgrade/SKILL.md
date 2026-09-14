@@ -1,11 +1,13 @@
 ---
 name: wuji-cli-upgrade
 description: "Upgrade Wuji device firmware with wuji upgrade: check which devices have updates (--check), upgrade one or all devices to the latest release, install a specific version (--to), flash a local firmware package (--file), and browse the firmware catalog (--list). Use when the user wants to upgrade, downgrade, or re-flash device firmware, or asks whether firmware updates are available."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
 metadata:
   author: wuji-technology
-  version: "1.0"
+  version: "2026.9.14"
   requires:
-    bins: ["wuji"]
+    bins:
+      - wuji
   cliHelp: "wuji upgrade --help"
 ---
 

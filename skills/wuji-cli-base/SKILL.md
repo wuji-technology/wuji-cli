@@ -1,11 +1,13 @@
 ---
 name: wuji-cli-base
 description: "Interact with Wuji devices (data gloves / dexterous hands) via the wuji CLI: scan for devices (devices), probe connectivity with a handshake (ping), read and write device parameters (get/set), and subscribe to real-time data such as EMF, tactile, and IMU (sub). Use when you need to check device status, read sensor data, change device configuration, or write device automation scripts. For live Wuji Hand 2 visualization, see wuji-cli-viz. For device health diagnostics, see wuji-cli-doctor. For firmware upgrades, see wuji-cli-upgrade."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
 metadata:
   author: wuji-technology
-  version: "1.4"
+  version: "2026.9.14"
   requires:
-    bins: ["wuji"]
+    bins:
+      - wuji
   cliHelp: "wuji --help"
 ---
 
