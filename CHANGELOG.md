@@ -7,6 +7,25 @@ and this project uses calendar versioning (YYYY.M.D).
 
 ## [Unreleased]
 
+## [2026.9.14]
+
+### Added
+
+- **Release notes and agent skills sync in `wuji update`**: `wuji update --check` now shows the release notes of the latest available version alongside the version comparison. After a successful binary upgrade, `wuji update` syncs the Wuji CLI agent skills to the matching CLI version, and a sync failure doesn't block the upgrade. `wuji update --skills` syncs skills to the current CLI version only.
+- **Teleoperation recording**: Added `wuji record teleop` to record an active teleoperation session of a Wuji Glove driving a Wuji Hand 2 as a managed MCAP.
+- **Recording history and export**: Added `wuji record list` and `wuji logs export --recording <RUN_ID>` to review and package selected recordings.
+- **Wuji Glove live visualization**: `wuji viz` now supports live Wuji Glove visualization.
+- **Guided device support skill**: Added the `wuji-cli-support` agent skill to collect fault details and prepare a support report with available attachments.
+
+### Changed
+
+- **visualization**: Hand 2 visualization and runtime tactile zeroing now adapt to the connected hardware — no-tactile devices show joint pose only, while tactile-equipped hands keep the tactile view.
+
+### Fixed
+
+- Fixed the one-click installer skills step ending with a spurious `Failed to install N` or `PromptScript does not support global skill installation`. Skills are now installed only for the agents detected on the machine, falling back to a direct copy into `~/.agents/skills`.
+- Fixed `wuji logs dump` / `export` failing with `session closed` when run against multiple devices in a single command. Every device's bundle is now exported.
+
 ## [2026.8.31]
 
 ### Added
@@ -85,7 +104,8 @@ and this project uses calendar versioning (YYYY.M.D).
 - Output formatting: most commands support `--json`/`--jsonl` output modes and device selection by `--sn`, `--address`, or `--handedness`.
 - Colored output: human-readable output uses consistent semantic colors for statuses, warnings, and values. Respects `NO_COLOR` and falls back to plain text on non-TTY output.
 
-[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.31...HEAD
+[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.9.14...HEAD
+[2026.9.14]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.31...v2026.9.14
 [2026.8.31]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.17...v2026.8.31
 [2026.8.17]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.3...v2026.8.17
 [2026.8.3]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.15...v2026.8.3

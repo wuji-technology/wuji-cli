@@ -1,11 +1,13 @@
 ---
 name: wuji-cli-doctor
 description: "Run health self-checks on Wuji devices with wuji doctor: EMF disconnect detection (pinpoints the affected finger and tells RX faults from TX faults) and tactile sensor dead pixel / bad row / bad column detection. Use when the user reports a glove not working, abnormal sensor data, or asks for troubleshooting or a device checkup."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
 metadata:
   author: wuji-technology
-  version: "1.1"
+  version: "2026.9.14"
   requires:
-    bins: ["wuji"]
+    bins:
+      - wuji
   cliHelp: "wuji doctor --help"
 ---
 
