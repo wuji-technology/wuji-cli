@@ -1,6 +1,9 @@
 ---
 name: wuji-cli-calib
 description: "Guide safe Wuji Glove calibration with the wuji CLI. Use when the user asks to run or monitor `wuji calib hand-model` or `wuji calib tactile`, interpret calibration progress or errors, cancel an active calibration, inspect the resulting hand model, or choose between hand model and tactile calibration. Route each mode without applying the hand model's user-and-hand rules to tactile's device-specific model."
+metadata:
+  author: wuji-technology
+  version: "2026.9.21"
 ---
 
 # Wuji CLI Calib

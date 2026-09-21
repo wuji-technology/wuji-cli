@@ -1,11 +1,13 @@
 ---
 name: wuji-cli-user
 description: "Create, switch, list, show, rename, or delete wuji SDK user profiles, and export/import calibration bundles (hand model + tactile model) between machines, all via the `wuji user` CLI. These are named calibration profiles under ~/.wuji — NOT operating-system accounts — so use this skill (never edit code or touch OS users) for any request to delete a user, switch/change the current user, rename a user, create or list users, resolve the 'default user cannot calibrate' block, or move/inspect calibration data. Delete and import are destructive; the skill covers the safe, confirmation-first way to run them."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
 metadata:
   author: wuji-technology
-  version: "1.1"
+  version: "2026.9.21"
   requires:
-    bins: ["wuji"]
+    bins:
+      - wuji
   cliHelp: "wuji user --help"
 ---
 

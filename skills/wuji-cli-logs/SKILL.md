@@ -1,11 +1,13 @@
 ---
 name: wuji-cli-logs
-description: "Export, list, dump, and locate Wuji device logs using `wuji logs`. Use when you need to collect support bundles including hand model calibration recordings (export), collect a device-side diagnostic snapshot and flash history (dump), check what log files exist (list), or find the local log directory (path). Supports date-range filtering, source filtering (sdk/studio/stderr), device communication dumps, device diagnostic snapshots, private-data redaction, and JSON output."
+description: "Export, list, dump, and locate Wuji device logs using `wuji logs`. Use when you need to collect support bundles including hand model calibration recordings, collect a device-side diagnostic snapshot and flash history, inspect log files, or locate the log directory. Supports date/source filtering, device dumps, private-data redaction, and JSON output."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
 metadata:
   author: wuji-technology
-  version: "1.3"
+  version: "2026.9.21"
   requires:
-    bins: ["wuji"]
+    bins:
+      - wuji
   cliHelp: "wuji logs --help"
 ---
 
@@ -15,9 +17,9 @@ metadata:
 - **Three text sources**: `sdk_*.log`, `studio_*.log`, `stderr_*.log`. Device communication dumps (`device_*.bin`) are excluded by default and gated behind `--with-dump`.
 - **Export produces a single ZIP** containing the selected log files, a host snapshot (`host_snapshot.json`), doctor diagnosis results (`doctor_diagnosis.json` — environment checks under `env`, device discovery and per-device checks under `device`), device snapshots + flash history (`devices/<sn>_<ts>_device.json` / `_flash.jsonl`, when devices are found), matching hand model calibration recordings, and a manifest (`manifest.json`). The snapshot and diagnosis are included even when no log files are found.
 - **Calibration recordings are automatic**: runs from `~/.wuji/calibration/recordings/` that intersect the same inclusive local-date range are copied under `calibration-recordings/<run_id>/`. Partial or legacy runs with no `ended_at` are filtered as a single point at their local `started_at` date.
-- **Recording manifest compatibility**: new hand-model runs use `schema_version: 2` and `calibration_type: "hand_model"`. Export also accepts schema 1 with `"ik"` and preserves every source manifest unchanged.
-- **Redaction is layered**: credentials (JWT, Bearer Token, API Key, Token, License, Password, AWS Key) are always redacted. Private data (username, user paths, hostname, SSID, IPv4, MAC) is redacted by default and can be disabled via `--no-redact` (internal builds only). Calibration `.mcap` files contain raw motion data and are never redacted.
-- **Exit codes**: The command returns 0 on success. It returns 1 when device diagnosis, log export, calibration recording export, device snapshot collection, or Flash collection fails in `dump` or `export`.
+- **Recording manifest compatibility**: new hand-model runs use `schema_version: 2` and `calibration_type: "hand_model"`; export also accepts legacy schema 1 / `"ik"` runs and preserves every source manifest unchanged.
+- **Redaction is layered**: credentials (JWT, Bearer Token, API Key, Token, License, Password, AWS Key) are always redacted; private data (username, user paths, hostname, SSID, IPv4, MAC) is redacted by default and can be disabled via `--no-redact` (internal builds only). Calibration `.mcap` files contain raw motion data and are never redacted.
+- **Exit codes**: 0 = success; 1 = any failure, including device diagnosis, log export, calibration recording, or device snapshot/flash collection failures. Recoverable items remain listed in the bundle manifest.
 
 ## Subcommands
 
