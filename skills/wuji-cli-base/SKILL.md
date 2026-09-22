@@ -1,11 +1,13 @@
 ---
 name: wuji-cli-base
 description: "Interact with Wuji devices (data gloves / dexterous hands) via the wuji CLI: scan for devices (devices), probe connectivity with a handshake (ping), read and write device parameters (get/set), and subscribe to real-time data such as EMF, tactile, and IMU (sub). Use when you need to check device status, read sensor data, change device configuration, or write device automation scripts. For live Wuji Hand 2 visualization, see wuji-cli-viz. For device health diagnostics, see wuji-cli-doctor. For firmware upgrades, see wuji-cli-upgrade."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
 metadata:
   author: wuji-technology
-  version: "1.4"
+  version: "2026.9.22"
   requires:
-    bins: ["wuji"]
+    bins:
+      - wuji
   cliHelp: "wuji --help"
 ---
 
@@ -31,7 +33,7 @@ metadata:
 | `wuji doctor`              | Device health self-check (see the wuji-cli-doctor skill)                |
 | `wuji upgrade`             | Firmware update check and upgrade (see the wuji-cli-upgrade skill)      |
 | `wuji user`                | Manage SDK users and export/import calibration data (see the wuji-cli-user skill) |
-| `wuji update`              | Update the CLI to the latest release (`--check` checks only)            |
+| `wuji update`              | Update the CLI and its Agent Skills (`--check` checks only, `--skills` syncs Skills only) |
 | `wuji completions <shell>` | Generate shell completion scripts                                       |
 
 Add `--help` after any command to see its detailed help.
@@ -116,14 +118,42 @@ $ wuji devices --json
 
 Device type and firmware version are not shown here: discovery is a broadcast scan without a handshake. Use `wuji ping` to get them.
 
-## Keeping the CLI Up to Date
+## Keeping the CLI and Skills Up to Date
 
 ```bash
 wuji update --check --json   # {"current": ..., "latest": ..., "update_available": true/false}
 wuji update                  # Download, verify, and replace the binary in place
+wuji update --skills         # Sync Agent Skills to this CLI's companion version only
 ```
 
-`update --check` always exits 0 when the check itself succeeds; gate on the `update_available` JSON field instead of the exit code. A background check also runs at most once every 24 hours and prints a notice on stderr — it never blocks commands or touches stdout. Set `WUJI_NO_UPDATE_CHECK=1` to disable it.
+`update --check` always exits 0 when the check itself succeeds. Gate on the `update_available` JSON field instead of the exit code. A background check also runs at most once every 24 hours and prints a notice on stderr — it never blocks commands or touches stdout. Set `WUJI_NO_UPDATE_CHECK=1` to disable it.
+
+### Agent Skills
+
+`wuji update` and `wuji update --skills` keep the Wuji CLI Skills in `~/.agents/skills` at or above the version that ships with your CLI. The report's `skills.status` field has three states:
+
+| Status | Meaning |
+| --- | --- |
+| `up-to-date` | Installed Skills are at or above the CLI's companion version |
+| `update-required` | Installed Skills are older, or their version isn't readable. Skills sync automatically after a successful binary upgrade, or run `wuji update --skills` |
+| `not-installed` | No Wuji CLI Skills found. `wuji update` reports this state, and `wuji update --skills` installs them |
+
+`wuji update --skills` syncs Skills without touching the binary, so you don't need a CLI upgrade to get Skills at the CLI's version or above. It exits 1 when Skills remain below that version after the sync, or when their version stays unreadable.
+
+### Stale Skill Directories
+
+A Skill that was renamed or retired keeps its directory on disk after a sync, because the installer only writes files. After a sync the CLI lists those directories, warns on stderr, and asks before moving them out of `~/.agents/skills`. Moved directories stay in a temp directory, and the report lists each one with its new path and `"action": "moved"`. Nothing gets deleted.
+
+In JSON output those directories appear under `stale_skills` — the field is omitted when there are none. Each entry has `name`, `action` (`moved`, `kept`, or `failed`), and, when it applies, `version`, `path`, and `error`.
+
+Pass `--yes` to skip the question, as `wuji update --yes` or `wuji update --skills --yes`. A run without a terminal reports the stale directories and leaves them in place unless you also pass `--yes`. With `--yes` the directories move out whether or not a terminal is present, so an automated run that passes the flag modifies `~/.agents/skills`.
+
+```bash
+wuji update --skills --json   # Report stale directories without moving them (no --yes)
+wuji update --skills --yes    # Move them out without asking, with or without a terminal
+```
+
+`wuji update --check` never moves directories.
 
 ## Install Shell Completions (Optional)
 

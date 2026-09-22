@@ -7,6 +7,25 @@ and this project uses calendar versioning (YYYY.M.D).
 
 ## [Unreleased]
 
+## [2026.9.22]
+
+### Added
+
+- `wuji update --check` shows the release notes of the latest version; after a successful upgrade `wuji update` syncs the matching agent skills, and `wuji update --skills` syncs the current version's skills only.
+- `wuji viz` supports live Wuji Glove visualization.
+- Added the `wuji-cli-support` agent skill for support reports.
+
+### Changed
+
+- Visualization and runtime tactile zeroing adapt to the connected hardware.
+
+### Fixed
+
+- Fixed `wuji update` and `wuji update --check` using different messages for the same state.
+- Fixed the installer taking skills from the default branch when `VERSION` pins a version.
+- Fixed the installer falsely reporting `Failed to install N` and `PromptScript does not support global skill installation`.
+- Fixed `wuji logs dump` / `export` failing with `session closed` on multiple devices.
+
 ## [2026.8.31]
 
 ### Added
@@ -85,7 +104,8 @@ and this project uses calendar versioning (YYYY.M.D).
 - Output formatting: most commands support `--json`/`--jsonl` output modes and device selection by `--sn`, `--address`, or `--handedness`.
 - Colored output: human-readable output uses consistent semantic colors for statuses, warnings, and values. Respects `NO_COLOR` and falls back to plain text on non-TTY output.
 
-[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.31...HEAD
+[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.9.22...HEAD
+[2026.9.22]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.31...v2026.9.22
 [2026.8.31]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.17...v2026.8.31
 [2026.8.17]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.3...v2026.8.17
 [2026.8.3]: https://github.com/wuji-technology/wuji-cli/compare/v2026.7.15...v2026.8.3

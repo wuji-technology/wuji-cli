@@ -28,25 +28,9 @@ prompt_yesno() {
     esac
 }
 
-# Install Agent skills — prefer npx (unless WUJI_SKILLS_USE_SCRIPT=1), fallback to install-skills.sh
+# Fetch and run install-skills.sh from the public repo
 install_skills() {
     SKILLS_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/scripts/install-skills.sh"
-    if [ "${WUJI_SKILLS_USE_SCRIPT:-}" = "1" ]; then
-        info "WUJI_SKILLS_USE_SCRIPT set, using install-skills.sh"
-        fallback_install_skills
-    elif command -v npx >/dev/null 2>&1; then
-        info "using npx to install skills"
-        npx --yes skills add "${GITHUB_REPO}" -g -y || {
-            warn "npx skills add failed, trying install-skills.sh..."
-            fallback_install_skills
-        }
-    else
-        info "using install-skills.sh to install skills"
-        fallback_install_skills
-    fi
-}
-
-fallback_install_skills() {
     _tmpfile=$(mktemp) || { warn "cannot create temp file"; return; }
 
     if command -v curl >/dev/null 2>&1; then
@@ -61,11 +45,7 @@ fallback_install_skills() {
 
     [ -s "$_tmpfile" ] || { warn "skills download empty, skipping"; rm -f "$_tmpfile"; return; }
 
-    if sh "$_tmpfile"; then
-        info "If your AI agent cannot find Skills, tell it to check ~/.agents/skills/wuji-*"
-    else
-        warn "skills installation failed, skipping"
-    fi
+    sh "$_tmpfile" || warn "skills installation failed, skipping"
     rm -f "$_tmpfile"
 }
 
@@ -177,14 +157,26 @@ main() {
 
     DEST="${INSTALL_DIR}/${BINARY_NAME}"
 
-    if [ "${WUJI_SKIP_CLI:-}" != "1" ]; then
-        # Resolve "latest" to a concrete version (error inside the command
-        # substitution only exits the subshell, hence the explicit || exit)
+    # Resolve "latest" to a concrete version (error inside the command
+    # substitution only exits the subshell, hence the explicit || exit).
+    # Resolved before the WUJI_SKIP_CLI branch so the skills step is pinned too.
+    # Skipped when both steps are off: there is nothing to pin, and the
+    # anonymous GitHub API call would fail the whole run on a network outage or
+    # an exhausted quota instead of doing nothing.
+    if [ "${WUJI_SKIP_CLI:-}" != "1" ] || [ "${WUJI_SKIP_SKILLS:-}" != "1" ]; then
         if [ "$VERSION" = "latest" ]; then
             VERSION=$(resolve_latest_version) || exit 1
             info "latest version: $VERSION"
         fi
+    fi
+    # The skills step runs install-skills.sh as a child process: export the
+    # resolved version so skills are installed from the matching release tag
+    # instead of the public repo's default branch. This must stay outside the
+    # WUJI_SKIP_CLI branch — otherwise a skills-only run installs unpinned
+    # skills and its VERSION=x.y.z pins are ignored.
+    export VERSION
 
+    if [ "${WUJI_SKIP_CLI:-}" != "1" ]; then
         ASSET="${BINARY_NAME}_${VERSION}_${TARGET}.tar.gz"
         URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${ASSET}"
 
