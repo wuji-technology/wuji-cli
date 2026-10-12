@@ -1,10 +1,10 @@
 ---
 name: wuji-cli-logs
 description: "Export, list, dump, and locate Wuji device logs using `wuji logs`. Use when you need to collect support bundles including hand model calibration recordings, collect a device-side diagnostic snapshot and flash history, inspect log files, or locate the log directory. Supports date/source filtering, device dumps, private-data redaction, and JSON output."
-compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.9.22"
+  version: "2026.10.12"
   requires:
     bins:
       - wuji
@@ -13,8 +13,8 @@ metadata:
 
 ## Mental Model
 
-- **Logs are local text files** written by Wuji SDK, Studio, and stderr capture, stored under `~/.wuji/logs/`. The CLI discovers and processes these files — it does not create them.
-- **Three text sources**: `sdk_*.log`, `studio_*.log`, `stderr_*.log`. Device communication dumps (`device_*.bin`) are excluded by default and gated behind `--with-dump`.
+- **Logs are local text files** written by Wuji SDK, Studio, stderr capture, and the CLI itself, stored under `~/.wuji/logs/`. The CLI discovers and processes these files, and writes its own operation records as `cli_*.jsonl`.
+- **Text sources**: `sdk_*.log`, `studio_*.log`, `stderr_*.log`, and `cli_<date>.jsonl` — the CLI's own record of the commands it runs (command line, exit code, duration, error). `wuji sub` and `wuji completions` write no operation records. Device communication dumps (`device_*.bin`) are excluded by default and gated behind `--with-dump`. `wuji logs export` bundles `sdk`, `studio`, and `stderr` by default; pass `--source cli` to include the operation records.
 - **Export produces a single ZIP** containing the selected log files, a host snapshot (`host_snapshot.json`), doctor diagnosis results (`doctor_diagnosis.json` — environment checks under `env`, device discovery and per-device checks under `device`), device snapshots + flash history (`devices/<sn>_<ts>_device.json` / `_flash.jsonl`, when devices are found), matching hand model calibration recordings, and a manifest (`manifest.json`). The snapshot and diagnosis are included even when no log files are found.
 - **Calibration recordings are automatic**: runs from `~/.wuji/calibration/recordings/` that intersect the same inclusive local-date range are copied under `calibration-recordings/<run_id>/`. Partial or legacy runs with no `ended_at` are filtered as a single point at their local `started_at` date.
 - **Recording manifest compatibility**: new hand-model runs use `schema_version: 2` and `calibration_type: "hand_model"`; export also accepts legacy schema 1 / `"ik"` runs and preserves every source manifest unchanged.
@@ -40,11 +40,13 @@ wuji logs path
 wuji logs list
 wuji logs list --days 7
 wuji logs list --source sdk,studio --days 3
+wuji logs list --source cli --days 1        # CLI operation records
 
-# Export a default bundle (last 1 day, all text sources and matching calibration runs)
+# Export a default bundle (last 1 day: sdk / studio / stderr logs and matching calibration runs)
 wuji logs export
 wuji logs export --days 7
 wuji logs export --source sdk --days 3
+wuji logs export --source cli --days 1      # add the CLI operation records to the bundle
 
 # Include device communication dumps
 wuji logs export --with-dump
@@ -106,6 +108,7 @@ unzip -l ~/Desktop/support.zip
 #   logs/YYYY-MM-DD/sdk_*.log
 #   logs/YYYY-MM-DD/studio_*.log
 #   logs/YYYY-MM-DD/stderr_*.log
+#   logs/YYYY-MM-DD/cli_*.jsonl     (CLI operation records, only with --source cli)
 #   devices/<sn>_<ts>_device.json   (device diagnostic snapshot, when devices found)
 #   devices/<sn>_<ts>_flash.jsonl   (device flash history, when devices found)
 #   calibration-recordings/<run_id>/manifest.json

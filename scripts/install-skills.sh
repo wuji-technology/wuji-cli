@@ -158,7 +158,7 @@ script_install() {
     info "downloading skills from $BASE_URL"
 
     TMP_DIR=$(mktemp -d)
-    trap 'rm -rf "$TMP_DIR"' EXIT  # ensure cleanup
+    trap 'rm -rf "$TMP_DIR"' EXIT  # 确保退出时清理
 
     if [ -n "$REF" ]; then
         info "installing skills from release tag $REF"

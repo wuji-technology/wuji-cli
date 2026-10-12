@@ -10,23 +10,17 @@ Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, r
 
 ### Prerequisites
 
-- Linux x86_64/ARM64, Windows x86_64, or Apple Silicon macOS
+- Ubuntu 22.04 LTS or later
 - Devices must be on the same local network (UDP) or connected via USB
 
 ### Installation
 
 #### CLI Installation
 
-On Linux or Apple Silicon macOS:
+Use the install script:
 
 ```bash
 curl -fsSL https://get.wuji.tech/cli | bash
-```
-
-On Windows x86_64:
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/wuji-technology/wuji-cli/main/scripts/install-cli.ps1 | iex"
 ```
 
 #### Skills Installation
@@ -80,7 +74,7 @@ wuji ping                            # Probe connectivity, report SN / firmware 
 ```bash
 wuji resources --sn <SERIAL>         # List readable parameters and subscribable topics
 wuji get firmware_version --sn <SERIAL>
-wuji set ip_address 192.168.1.100 --sn <SERIAL>
+wuji set ip_address <NEW_IP> --sn <SERIAL>
 ```
 
 ### Subscribe to Topics
