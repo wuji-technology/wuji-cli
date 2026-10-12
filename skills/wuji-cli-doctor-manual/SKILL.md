@@ -1,9 +1,10 @@
 ---
 name: wuji-cli-doctor-manual
 description: "Run an active Wuji Hand 2 thumb-opposition check. Use when a user needs to verify thumb-to-finger motion or investigate a possible hand mechanism issue."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.9.22"
+  version: "2026.10.12"
   requires:
     bins: ["wuji"]
   cliHelp: "wuji doctor manual --help"
@@ -41,6 +42,10 @@ force measurements.
 The default timeout is 120 seconds. Set a value from 5 through 600 seconds with
 `--timeout-s <SECONDS>`. Press Ctrl+C once to stop safely. The command unloads the hand before it
 releases the device.
+
+Each finger also has 10 seconds to reach the thumb. A finger that does not get there in time is
+skipped, the remaining fingers still run, and the result is `INDETERMINATE` with that finger named
+in the explanation. Clear anything blocking the hand and run the recipe again.
 
 ## Read the Result
 

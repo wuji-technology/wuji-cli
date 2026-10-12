@@ -7,6 +7,27 @@ and this project uses calendar versioning (YYYY.M.D).
 
 ## [Unreleased]
 
+## [2026.10.12]
+
+### Added
+
+- Added support for running Wuji CLI on Ubuntu 20.04 (glibc 2.31) and later.
+- Added links to agent skills and documentation in `wuji --help`, making Wuji CLI guidance easier for agents to find.
+- Added a check to detect when installed agent skills are out of date.
+- Added CLI operation logs that record commands, exit codes, durations, and errors. View them with `wuji logs list` or select them with `--source cli` when exporting logs.
+
+### Changed
+
+- Improved the initial scale of the Wuji Glove tactile display in `wuji viz`.
+- Improved `wuji upgrade` to show progress during long upgrades and display the firmware version installed afterward.
+
+### Fixed
+
+- Corrected the Wuji Glove TX model in `wuji viz`.
+- Fixed `wuji update --skills` getting stuck while updating agent skills.
+- Fixed `wuji upgrade` returning the correct error code when `--yes` is missing in JSON output modes.
+- Fixed `wuji upgrade` reporting a raw `.bin` upgrade as successful when the device rejected it.
+
 ## [2026.9.22]
 
 ### Added
@@ -104,7 +125,8 @@ and this project uses calendar versioning (YYYY.M.D).
 - Output formatting: most commands support `--json`/`--jsonl` output modes and device selection by `--sn`, `--address`, or `--handedness`.
 - Colored output: human-readable output uses consistent semantic colors for statuses, warnings, and values. Respects `NO_COLOR` and falls back to plain text on non-TTY output.
 
-[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.9.22...HEAD
+[Unreleased]: https://github.com/wuji-technology/wuji-cli/compare/v2026.10.12...HEAD
+[2026.10.12]: https://github.com/wuji-technology/wuji-cli/compare/v2026.9.22...v2026.10.12
 [2026.9.22]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.31...v2026.9.22
 [2026.8.31]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.17...v2026.8.31
 [2026.8.17]: https://github.com/wuji-technology/wuji-cli/compare/v2026.8.3...v2026.8.17

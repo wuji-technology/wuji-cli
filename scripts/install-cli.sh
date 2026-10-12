@@ -1,8 +1,8 @@
 #!/bin/sh
 set -u
 
-# "latest" resolves to the newest release via the GitHub API at install time
-# set VERSION=x.y.z to pin a specific version.
+# "latest" 在安装时通过 GitHub API 解析为最新 release
+# 设 VERSION=x.y.z 可指定具体版本。
 VERSION="${VERSION:-latest}"
 GITHUB_REPO="${GITHUB_REPO:-wuji-technology/wuji-cli}"
 
@@ -16,8 +16,8 @@ success() { printf "\033[32m[SUCCESS]\033[0m %s\n" "$*"; }
 
 need_cmd() { command -v "$1" >/dev/null 2>&1 || error "need '$1'"; }
 
-# Prompt on /dev/tty with a default-yes answer; returns 0 (yes) or 1 (no).
-# Silent when there is no controlling terminal (pipe / CI / container).
+# 在 /dev/tty 上询问，默认答案为 yes；返回 0（是）或 1（否）。
+# 没有控制终端时（管道 / CI / 容器）静默返回。
 prompt_yesno() {
     ( : < /dev/tty ) 2>/dev/null || return 1
     printf "\033[36m[INFO]\033[0m %s [Y/n] " "$1" > /dev/tty
@@ -28,7 +28,7 @@ prompt_yesno() {
     esac
 }
 
-# Fetch and run install-skills.sh from the public repo
+# 从公开仓下载并执行 install-skills.sh
 install_skills() {
     SKILLS_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/scripts/install-skills.sh"
     _tmpfile=$(mktemp) || { warn "cannot create temp file"; return; }
@@ -49,7 +49,7 @@ install_skills() {
     rm -f "$_tmpfile"
 }
 
-# Check if install dir is in PATH, append to shell config if not
+# 检查安装目录是否在 PATH 中，不在则追加到 shell 配置文件
 ensure_path() {
     case ":$PATH:" in
         *:"$1":*) ;;
@@ -65,7 +65,7 @@ ensure_path() {
     esac
 }
 
-# Detect the release target for this system.
+# 探测本机对应的 release 目标三元组。
 detect_target() {
     os=$(uname -s)
     arch=$(uname -m)
@@ -77,7 +77,7 @@ detect_target() {
     esac
 }
 
-# Download file (single-line progress bar instead of the raw stats table)
+# 下载文件（用单行进度条替代默认的统计表输出）
 download() {
     if command -v curl >/dev/null 2>&1; then
         curl -fL --progress-bar "$1" -o "$2"
@@ -86,35 +86,52 @@ download() {
     fi
 }
 
-# Fetch a URL to stdout (for API queries)
+# 取 URL 内容到 stdout（用于 GitHub API 查询）。
+# api.github.com 匿名配额是 60 次/时/IP，共享 / NAT 出口很容易耗尽，表现是安装
+# 直接失败、只报一句 "cannot fetch the SHA-256 digest"。GH_TOKEN / GITHUB_TOKEN
+# （变量与优先级同 `wuji update`）可把配额提到 5000 次/时。请求失败时不再丢弃
+# curl 的 stderr，坏因留在安装日志里可见。
 fetch_url() {
+    # 两个变量各自去空白后再取第一个非空值：`${GH_TOKEN:-…}` 只把空串当未设置，
+    # 纯空白的 GH_TOKEN 会先被选中再被清空，回退分支永远走不到，等于丢了
+    # GITHUB_TOKEN。语义与 `wuji update`（分别 trim 后取第一个非空）一致。
+    _gh_token=$(printf '%s' "${GH_TOKEN:-}" | tr -d '[:space:]')
+    _github_token=$(printf '%s' "${GITHUB_TOKEN:-}" | tr -d '[:space:]')
+    _token="${_gh_token:-$_github_token}"
     if command -v curl >/dev/null 2>&1; then
-        curl -fsL "$1" 2>/dev/null
+        if [ -n "$_token" ]; then
+            curl -fsSL -H "Authorization: Bearer $_token" "$1"
+        else
+            curl -fsSL "$1"
+        fi
     else
-        wget -qO- "$1" 2>/dev/null
+        if [ -n "$_token" ]; then
+            wget -qO- --header="Authorization: Bearer $_token" "$1"
+        else
+            wget -qO- "$1"
+        fi
     fi
 }
 
-# Resolve "latest" to a concrete version via the GitHub releases API
-# (releases/latest never points at a prerelease, matching what the
-# public repo actually serves). Prints the version without the leading v.
+# 通过 GitHub releases API 把 "latest" 解析为具体版本
+#（releases/latest 不会指向预发布版本，与公开仓实际提供的内容一致）。
+# 输出不带 v 前缀的版本号。
 resolve_latest_version() {
     api_url="https://api.github.com/repos/${GITHUB_REPO}/releases/latest"
     tag=$(fetch_url "$api_url" | awk -F'"' '/"tag_name":/ { print $4; exit }')
-    [ -n "$tag" ] || error "cannot resolve the latest version from GitHub API (set VERSION=x.y.z to install a specific version)"
+    [ -n "$tag" ] || error "cannot resolve the latest version from GitHub API (set VERSION=x.y.z to install a specific version; set GH_TOKEN or GITHUB_TOKEN if the anonymous rate limit is exhausted)"
     echo "${tag#v}"
 }
 
-# Verify the downloaded archive against the sha256 digest that GitHub
-# publishes for each release asset (same trust anchor as `wuji update`).
+# 用 GitHub 给每个 release 资产发布的 sha256 digest 校验下载的压缩包
+#（与 `wuji update` 同一个信任锚）。
 verify_sha256() {
     file="$1"
     asset="$2"
 
     api_url="https://api.github.com/repos/${GITHUB_REPO}/releases/tags/v${VERSION}"
-    # Asset objects list "name" before "digest"; scan line by line and take
-    # the digest of the matching asset. The release-level "name" resets the
-    # flag, and no other nested object carries a "name" field.
+    # 资产对象里 "name" 出现在 "digest" 之前；逐行扫描取匹配资产的 digest。
+    # release 这一层的 "name" 会重置标记，其它嵌套对象都不含 "name" 字段。
     expected=$(fetch_url "$api_url" | awk -v asset="$asset" '
         /"name":/ { in_asset = index($0, "\"" asset "\"") > 0 }
         in_asset && /"digest":/ {
@@ -126,7 +143,7 @@ verify_sha256() {
         }')
 
     if [ -z "$expected" ]; then
-        error "cannot fetch the SHA-256 digest for $asset from GitHub API"
+        error "cannot fetch the SHA-256 digest for $asset from GitHub API (set GH_TOKEN or GITHUB_TOKEN if the anonymous rate limit is exhausted)"
     fi
 
     if command -v sha256sum >/dev/null 2>&1; then
@@ -144,7 +161,7 @@ verify_sha256() {
 
 main() {
 
-    # Check prerequisites
+    # 检查依赖命令
     need_cmd uname
     need_cmd mktemp
     need_cmd tar
@@ -152,28 +169,26 @@ main() {
         error "need curl or wget"
     fi
 
-    # Detect the exact release target (OS + architecture).
+    # 探测确切的 release 目标（OS + 架构）。
     TARGET=$(detect_target) || exit 1
 
     DEST="${INSTALL_DIR}/${BINARY_NAME}"
 
-    # Resolve "latest" to a concrete version (error inside the command
-    # substitution only exits the subshell, hence the explicit || exit).
-    # Resolved before the WUJI_SKIP_CLI branch so the skills step is pinned too.
-    # Skipped when both steps are off: there is nothing to pin, and the
-    # anonymous GitHub API call would fail the whole run on a network outage or
-    # an exhausted quota instead of doing nothing.
+    # 把 "latest" 解析为具体版本（命令替换里的 error 只退出子 shell，
+    # 所以这里显式写 || exit）。
+    # 放在 WUJI_SKIP_CLI 分支之前解析，skills 这一步才会同样被 pin 住。
+    # 两步都关掉时跳过：没有需要 pin 的东西，而匿名 GitHub API 请求会在
+    # 网络故障或配额耗尽时把整条安装判失败，本可以什么都不做。
     if [ "${WUJI_SKIP_CLI:-}" != "1" ] || [ "${WUJI_SKIP_SKILLS:-}" != "1" ]; then
         if [ "$VERSION" = "latest" ]; then
             VERSION=$(resolve_latest_version) || exit 1
             info "latest version: $VERSION"
         fi
     fi
-    # The skills step runs install-skills.sh as a child process: export the
-    # resolved version so skills are installed from the matching release tag
-    # instead of the public repo's default branch. This must stay outside the
-    # WUJI_SKIP_CLI branch — otherwise a skills-only run installs unpinned
-    # skills and its VERSION=x.y.z pins are ignored.
+    # skills 这步以子进程方式运行 install-skills.sh：把解析出的版本 export 出去，
+    # 让 skills 从对应的 release tag 安装，而不是公开仓的默认分支。
+    # export 必须留在 WUJI_SKIP_CLI 分支之外——否则只装 skills 的那次运行会装到
+    # 未 pin 的内容，用户传的 VERSION=x.y.z 也会被忽略。
     export VERSION
 
     if [ "${WUJI_SKIP_CLI:-}" != "1" ]; then
@@ -181,7 +196,7 @@ main() {
         URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${ASSET}"
 
         TMP_DIR=$(mktemp -d)
-        trap 'rm -rf "$TMP_DIR"' EXIT  # ensure cleanup
+        trap 'rm -rf "$TMP_DIR"' EXIT  # 确保退出时清理
         TMPFILE="$TMP_DIR/$ASSET"
         EXTRACT_DIR="$TMP_DIR/extract"
 
@@ -198,9 +213,9 @@ main() {
         tar -xOzf "$TMPFILE" > "$EXTRACTED" || error "cannot extract $ASSET"
         [ -f "$EXTRACTED" ] || error "$ASSET does not contain a regular $BINARY_NAME binary"
 
-        # Install binary
+        # 校验版本后安装二进制
         chmod +x "$EXTRACTED"
-        reported_version=$("$EXTRACTED" --version 2>/dev/null | awk '{print $NF}')
+        reported_version=$("$EXTRACTED" --version 2>/dev/null | awk 'END {print $NF}')
         [ "$reported_version" = "$VERSION" ] || error "$BINARY_NAME reports version '${reported_version:-<missing>}', expected '$VERSION'"
 
         mkdir -p "$INSTALL_DIR" || error "cannot create $INSTALL_DIR"
@@ -213,14 +228,14 @@ main() {
         success "wuji-cli installed to $DEST"
         success "run 'wuji --help' to get started"
 
-        # Ensure install dir is in PATH. Must not modify PATH beforehand,
-        # or the check would always pass and rc files would never be updated.
+        # 确保安装目录在 PATH 中。检查前不能先改 PATH，否则检查恒真、
+        # rc 文件永远不会被写入。
         ensure_path "$INSTALL_DIR"
     else
         info "WUJI_SKIP_CLI set, skipping CLI installation"
     fi
 
-    # ── Optional: Agent Skills Installation ──
+    # ── 可选：安装 Agent Skills ──
     echo ""
     if [ "${WUJI_SKIP_SKILLS:-}" = "1" ]; then
         info "WUJI_SKIP_SKILLS set, skipping skills installation"

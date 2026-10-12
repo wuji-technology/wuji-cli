@@ -1,10 +1,10 @@
 ---
 name: wuji-cli-upgrade
-description: "Upgrade Wuji device firmware with wuji upgrade: check which devices have updates (--check), upgrade one or all devices to the latest release, install a specific version (--to), flash a local firmware package (--file), and browse the firmware catalog (--list). Use when the user wants to upgrade, downgrade, or re-flash device firmware, or asks whether firmware updates are available."
-compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
+description: "Upgrade Wuji device firmware with wuji upgrade: check which devices have updates (--check), upgrade one or all devices to the latest release, install a specific version (--to), flash a local firmware package (--file), browse the firmware catalog (--list), and roll the device back to its backup firmware (rollback). Use when the user wants to upgrade, downgrade, roll back, or re-flash device firmware, or asks whether firmware updates are available."
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.9.22"
+  version: "2026.10.12"
   requires:
     bins:
       - wuji
@@ -29,7 +29,7 @@ Actions:
 - *(no action flag)* — upgrade the scoped devices to their latest catalog version
 - `--to <VERSION>` — install a specific catalog version
 - `--file <PATH>` — flash a local firmware file
-- `--list` — browse the firmware catalog, read-only
+- `-l` / `--list` — browse the firmware catalog, read-only
 
 A version only makes sense for one device type, so `--to`, `--file`, and `--list` require a single-type scope: `--type` or one device. `--all` always means "latest for each device".
 
@@ -56,7 +56,7 @@ Without a device selector, single-device actions auto-pick the only connected de
 
 ## Reading the Report
 
-- Per-device `Status`: `ok` / `skipped` / `failed`; the `Detail` column carries the failure reason or skip note
+- Per-device `Status`: `ok` / `skipped` / `failed`; the `Detail` column carries the failure reason or the skip note, plus the unverified-file note for a raw `.bin`
 - Exit code: 0 unless a device **failed** (skipped devices don't fail), directly usable in scripts
 - `--check` exits 0 whether or not updates exist (only a query failure exits 1); gate on the JSON `status` field instead
 
@@ -140,4 +140,28 @@ WG1KXXXXXXXXXX01 (current: 0.11.1)
 └─────────────────┴────────────┴────────────┴──────────────────────────────────┘
 ```
 
-For scripting, add `--json` (flashing also needs `--yes`); the report carries the same fields as the tables above.
+For scripting, add `--json` (flashing also needs `--yes`). Each device row carries `sn`, `status`,
+`firmware_before`, `firmware_after`, `duration_s`, `note` and `error`, plus `firmware_expected` holding
+the target version taken from the catalog or the package manifest.
+
+`Before` and `After` are both read from the device, `After` after the upgrade completed. `After` stays
+`-` (and `firmware_after` stays `null`) when the upgrade did not run (skipped), did not succeed (failed),
+or when the device does not report a version. When the device does report one, `After` shows the value
+read, even if it equals `Before`: re-flashing the same version with `--force`, or an upgrade that only
+changes slave nodes, leaves the two equal while still writing the device. Treat `After` as supporting
+information rather than a verdict.
+
+## Rolling Back Firmware
+
+`wuji upgrade rollback` switches the device to its backup firmware in one step. It is a subcommand, not a flag, and does not take any upgrade action flags (`--check`, `--to`, `--file`, `--list`, `--force`, `--all`, `--type`):
+
+```bash
+wuji upgrade rollback --sn WH2KXXXXXXXXXX01            # Roll back one device (prompts for confirmation)
+wuji upgrade rollback --sn WH2KXXXXXXXXXX01 --yes      # Skip the prompt
+wuji upgrade rollback --sn WH2KXXXXXXXXXX01 --yes --json   # Machine-readable report
+```
+
+- `--sn` is required; rollback always targets a single device.
+- Hands whose tactile sensors are currently online cannot be rolled back: the request is rejected before the device is modified, and the report's `Status` is `failed` (safe to retry once resolved).
+- The rollback target is not selectable, and its version is not known before the operation completes. The confirmation prompt says so explicitly.
+- The report's `Status` is `ok`, `failed`, or `unknown`. `unknown` means the rollback did not reach a confirmed end state (part of the device could not be confirmed, the read-back did not verify the switch, or the post-rollback version could not be read back) — do **not** retry blindly (a successful retry would switch back to the original version); verify the actual version first with `wuji ping --sn <SN>`. A report is only `ok` when it carries the post-rollback version that was read back from the device.

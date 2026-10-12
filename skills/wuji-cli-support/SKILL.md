@@ -1,10 +1,10 @@
 ---
 name: wuji-cli-support
 description: "Use when a customer needs guided troubleshooting or a support report for a Wuji device that freezes, disconnects, or behaves unexpectedly, including unresolved wuji command failures. Gather missing facts, collect and inspect evidence, check official troubleshooting sources, and produce a copy-paste report with available attachments for support@wuji.tech. For a standalone health check use wuji-cli-doctor. For log export alone use wuji-cli-logs without starting an interview."
-compatibility: Requires Wuji CLI installed with the wuji executable available on PATH, access to local logs and ZIP contents, and wuji-cli-doctor and wuji-cli-logs skills. Online issue matching requires access to docs.wuji.tech.
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH, access to local logs and ZIP contents, and wuji-cli-doctor and wuji-cli-logs skills. Online issue matching requires access to docs.wuji.tech. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.9.22"
+  version: "2026.10.12"
   requires:
     bins:
       - wuji

@@ -10,6 +10,16 @@ $ProgressPreference = "SilentlyContinue"
 
 $repo = if ($env:GITHUB_REPO) { $env:GITHUB_REPO } else { "wuji-technology/wuji-cli" }
 $userAgent = "wuji-cli-installer"
+# GitHub API 匿名配额是 60 次/时/IP，共享 / NAT 出口很容易耗尽。
+# GH_TOKEN / GITHUB_TOKEN（变量与优先级同 `wuji update`）可把配额提到 5000 次/时；
+# 空值与纯空白按未设置处理。
+$githubToken = if ($env:GH_TOKEN -and $env:GH_TOKEN.Trim()) {
+    $env:GH_TOKEN.Trim()
+} elseif ($env:GITHUB_TOKEN -and $env:GITHUB_TOKEN.Trim()) {
+    $env:GITHUB_TOKEN.Trim()
+} else {
+    $null
+}
 $lock = $null
 $tempDir = $null
 $pending = $null
@@ -72,6 +82,9 @@ try {
     }
 
     $headers = @{ "User-Agent" = $userAgent }
+    if ($githubToken) {
+        $headers["Authorization"] = "Bearer $githubToken"
+    }
     if ($Version -eq "latest") {
         $apiUrl = "https://api.github.com/repos/$repo/releases/latest"
     } else {

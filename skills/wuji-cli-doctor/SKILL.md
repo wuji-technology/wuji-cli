@@ -1,10 +1,10 @@
 ---
 name: wuji-cli-doctor
 description: "Run health self-checks on Wuji devices with wuji doctor: EMF disconnect detection (pinpoints the affected finger and tells RX faults from TX faults) and tactile sensor dead pixel / bad row / bad column detection. Use when the user reports a glove not working, abnormal sensor data, or asks for troubleshooting or a device checkup."
-compatibility: Requires Wuji CLI installed with the wuji executable available on PATH.
+compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.9.22"
+  version: "2026.10.12"
   requires:
     bins:
       - wuji
@@ -52,7 +52,7 @@ $ wuji doctor
 └─ ✔ OS: Ubuntu 26.04 (supported)
 
 ! Network interfaces: 2 interfaces, see interface count
-├─ ✔ eth0 (192.168.1.100/24, fe80::abcd:.../64)
+├─ ✔ eth0 (192.168.1.50/24, fe80::abcd:.../64)
 └─ ! Interface count: 2 interfaces — multiple interfaces may cause routing issues
 
 ══════ Generic ══════
