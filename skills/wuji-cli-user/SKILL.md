@@ -4,7 +4,7 @@ description: "Create, switch, list, show, rename, or delete wuji SDK user profil
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.12"
+  version: "2026.10.26"
   requires:
     bins:
       - wuji
