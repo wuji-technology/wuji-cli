@@ -4,7 +4,7 @@ description: "Interact with Wuji devices (data gloves / dexterous hands) via the
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.12"
+  version: "2026.10.26"
   requires:
     bins:
       - wuji
@@ -75,7 +75,7 @@ wuji sub tactile --sn <SN> --count 10 --jsonl  # 6. Capture 10 tactile frames
 
 `wuji resources --sn <SN> --json` is the authoritative list; these are the high-frequency items:
 
-- Common params (get/set): `hand_side`, `firmware_version`, `serial_number`, `ip_address`, `data_port`
+- Common params (get/set): `hand_side`, `firmware_version`, `serial_number`, `ip_address`, `data_port` — capabilities vary by device, and the GET/SET columns in `wuji resources --sn <SN>` are authoritative
 - Common topics (sub): `tactile` (tactile matrix), `emf_poses` (EMF poses), `imu_data/palm` (IMU), `tip_poses` (fingertip poses), `hand_joint_angles` (joint angles), `hand_skeleton`, `tf`
 
 ## Recording Data to Files
@@ -95,6 +95,7 @@ wuji sub emf_poses --count 500 --jsonl | tee data/emf.jsonl | jq      # Record a
 | `Session already exists (0x0013)`                     | Another process holds a direct session; with `--sn` or no target, the CLI falls back to Zenoh read-only automatically |
 | `connected to wrong device: requested sn=X, got sn=Y` | Multiple devices share one address, or the scan entry is stale; rerun `wuji devices` to verify                        |
 | `virtual parameter 'X' currently has no value`        | The virtual param has no default and the stateless CLI doesn't persist writes; expected behavior                      |
+| `'X' does not support set. Supported operations: get` | The resource doesn't support that operation, so the CLI sends nothing to the device and exits with code 1. Check the resource's GET, SET, or SUB column in `wuji resources --sn <SN>`. With `--json` or `--jsonl`, the error also carries `kind: "unsupported_operation"`, `path`, `operation`, `device`, and `capabilities` |
 | set rejected (`direct_only`)                          | Currently read-only through the Zenoh bridge; retry after the direct session holder releases the device               |
 | set succeeds but `wuji devices` shows no change       | Network params such as `ip_address`/`data_port` take effect after a device reboot                                     |
 
@@ -137,6 +138,16 @@ wuji update --skills         # Sync Agent Skills to this CLI's companion version
 ```
 
 `update --check` always exits 0 when the check itself succeeds. Gate on the `update_available` JSON field instead of the exit code. A background check also runs at most once every 24 hours and prints a notice on stderr — it never blocks commands or touches stdout. Set `WUJI_NO_UPDATE_CHECK=1` to disable it.
+
+### Checking the Exact Version
+
+```bash
+wuji --version          # Two lines: short commit and version
+wuji --version --long   # Four lines: full commit, version, build target, profile
+wuji --version --json   # {"version", "commit" (full sha or "unknown"), "target", "profile"}
+```
+
+The `--long` output is stable line-oriented text for scripts: each line is `key: value`, in the order `commit`, `version`, `target`, `profile`. The commit is the 40-character sha the binary was built from, or `unknown` for builds outside a Git checkout.
 
 ### Agent Skills
 

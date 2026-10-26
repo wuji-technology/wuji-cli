@@ -4,7 +4,7 @@ description: "Visualize live Wuji Hand 2 or Wuji Glove data with the official Re
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.12"
+  version: "2026.10.26"
   requires:
     bins:
       - wuji
@@ -218,6 +218,9 @@ Force directions and magnitudes use the Viewer’s displayed coordinate conventi
 per-finger resultant forces and their history when tactile data is available.
 
 ## Handle Faults
+
+The warning `Using a standard model for visualization.` means the Viewer is using a standard model.
+Visualization can continue with live device data.
 
 Detailed warnings and errors are printed in the terminal. The Viewer page does not add an in-panel health marker:
 
