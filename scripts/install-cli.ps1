@@ -33,6 +33,38 @@ function Write-Success([string]$Message) {
     Write-Host "[SUCCESS] $Message" -ForegroundColor Green
 }
 
+function Write-Warn([string]$Message) {
+    Write-Host "[WARN] $Message" -ForegroundColor Yellow
+}
+
+function Prompt-YesNo([string]$Prompt) {
+    # CI 或非交互环境下直接默认返回 $false（静默跳过）
+    if ([Console]::IsInputRedirected) {
+        return $false
+    }
+    Write-Host "[INFO] $Prompt [Y/n] " -NoNewline -ForegroundColor Cyan
+    $reply = [Console]::ReadLine()
+    if ($null -eq $reply) { return $false }
+    $reply = $reply.Trim()
+    if ($reply -match '^(n|no)$') { return $false }
+    return $true
+}
+
+function Install-Skills([string]$Repo, [string]$Version) {
+    $scriptUrl = "https://raw.githubusercontent.com/$Repo/main/scripts/install-skills.ps1"
+    try {
+        $defaultSkillsDir = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".agents\skills"
+        $params = @{"Repo" = $repo; "InstallDir" = $defaultSkillsDir}
+        if ($Version) { $params["Version"] = $Version }
+        # 取回的文本可能带 UTF-8 BOM（install-skills.ps1 首行就带 BOM），Windows PowerShell 5.1
+        # 的 scriptblock 解析器会把它当成非法字符，先剥掉。
+        $body = ([string](Invoke-RestMethod $scriptUrl)).TrimStart([char]0xFEFF)
+        & ([scriptblock]::Create($body)) @params
+    } catch {
+        Write-Warn "Skills installation failed, skipping: $_"
+    }
+}
+
 function Add-ToUserPath([string]$Directory) {
     $normalized = [IO.Path]::GetFullPath($Directory).TrimEnd('\')
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -95,7 +127,7 @@ try {
     Write-Info "Resolving Wuji CLI $Version..."
     $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers
     $resolvedVersion = ([string]$release.tag_name).TrimStart('v')
-    $assetName = "wuji_${resolvedVersion}_x86_64-pc-windows-msvc.zip"
+    $assetName = "wuji_${resolvedVersion}_x86_64-pc-windows-gnullvm.zip"
     $assets = @($release.assets | Where-Object { $_.name -eq $assetName })
     if ($assets.Count -ne 1) {
         throw "Release v$resolvedVersion does not contain $assetName."
@@ -199,6 +231,22 @@ try {
     Add-ToUserPath $InstallDir
     Write-Success "Wuji CLI v$resolvedVersion installed to $destination"
     Write-Info "Open a new terminal, then run 'wuji --help' to get started."
+
+    # 可选：安装 Agent Skills（对齐 install-cli.sh）
+    Write-Host ""
+    if ($env:WUJI_SKIP_SKILLS -eq "1") {
+        Write-Info "WUJI_SKIP_SKILLS set, skipping skills installation."
+    } elseif (Prompt-YesNo "Install Wuji CLI Agent skills?") {
+        Install-Skills -Repo $repo -Version $resolvedVersion
+    } else {
+        Write-Info "Skipped. Install skills later via:"
+        Write-Info "  npx skills add $repo -g"
+        Write-Info "  irm https://raw.githubusercontent.com/$repo/main/scripts/install-skills.ps1 | iex"
+    }
+
+    Write-Host ""
+    Write-Info "Setup complete"
+    Write-Host ""
 } finally {
     if ($lock) {
         $lock.Dispose()

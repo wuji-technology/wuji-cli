@@ -4,7 +4,7 @@ description: "Run health self-checks on Wuji devices with wuji doctor: EMF disco
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.26"
+  version: "2026.11.9"
   requires:
     bins:
       - wuji
@@ -125,7 +125,8 @@ written from the CLI, follow the support channel (see the wuji-cli-support skill
 - Status: ✔ pass / ! warn (informational anomaly) / ✘ fail (confirmed fault) / ~ skip (the check didn't apply or couldn't run)
 - `Tip:` lines are fix suggestions
 - Exit code: 0 = no fail (warns allowed). 1 = a fail exists or diagnosis couldn't complete, directly usable in scripts. No device attached is not an error — the host-environment and discovery checks still run and determine the exit code.
-- Tactile check results are for reference only (capped at warn). Verify via tactile heatmap in Wuji Studio
+- `Studio` (Wuji Studio) is end of life. The Software group omits the Studio node when Studio isn't installed, and reports `! <version> (end-of-life, switch to Wuji CLI)` with a migration tip when it is. That warn does not make the exit code 1.
+- Tactile check results are for reference only (capped at warn). Verify via the tactile matrix in wuji viz
 - Duplicate device IP and host-subnet checks run only when discovery finds a UDP device. If every device uses USB or Zenoh, both checks show `~ not attempted: no UDP devices`. These skipped checks don't make the exit code 1.
 - Devices without a diagnostic recipe show a ~ connect & diagnose node. This skipped node doesn't make the exit code 1. Connection or data-collection failures still show ✘ and return 1.
 
@@ -137,8 +138,7 @@ $ wuji doctor
  ══════ Environment ══════
 ~ Software: version info incomplete
 ├─ ✔ CLI: 2026.8.3 (up to date)
-├─ ~ SDK: not installed or version undetectable (skipped)
-└─ ✔ Studio: 2026.8.3 (up to date)
+└─ ~ SDK: not installed or version undetectable (skipped)
 
 ✔ System: supported
 └─ ✔ OS: Ubuntu 26.04 (supported)
@@ -162,7 +162,7 @@ $ wuji doctor
 └─ ! tactile dead-pixel check: 0 dead pixels, 2 bad rows, 2 bad cols
    ├─ ! Bad rows: 2 bad row(s)
    └─ ! Bad cols: 2 bad col(s)
-   Tip: Tactile check result is for reference only. Verify via tactile heatmap in Wuji Studio
+   Tip: Tactile check result is for reference only. Verify via the tactile matrix in wuji viz
 ```
 
 `wuji doctor -v` lists every check item. Passing items are hidden by default, so add `-v` to show them all. Device sections only — the Environment / Generic sections shown above are omitted here for brevity (they are printed before the devices in real output):
@@ -174,7 +174,7 @@ $ wuji doctor
 ├─ ✔ EMF disconnect check: all 5 fingers normal
 └─ ! tactile dead-pixel check: 0 dead pixels, 0 bad rows, 1 bad col
    └─ ! Bad cols: 1 bad col(s)
-   Tip: Tactile check result is for reference only. Verify via tactile heatmap in Wuji Studio
+   Tip: Tactile check result is for reference only. Verify via the tactile matrix in wuji viz
 
 $ wuji doctor -v
 
@@ -193,7 +193,7 @@ $ wuji doctor -v
    ├─ ✔ Pinky
    ├─ ✔ Palm
    └─ ! Bad cols: 1 bad col(s)
-   Tip: Tactile check result is for reference only. Verify via tactile heatmap in Wuji Studio
+   Tip: Tactile check result is for reference only. Verify via the tactile matrix in wuji viz
 ```
 
 Every diagnostic item reports in the same envelope. One run reports only the item it ran
@@ -247,12 +247,6 @@ $ wuji doctor --json
           "label": "SDK",
           "status": "skip",
           "summary": "not installed or version undetectable (skipped)"
-        },
-        {
-          "id": "sw_studio",
-          "label": "Studio",
-          "status": "pass",
-          "summary": "2026.8.3 (up to date)"
         }
       ]
     },

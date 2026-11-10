@@ -4,7 +4,7 @@ description: "Interact with Wuji devices (data gloves / dexterous hands) via the
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.26"
+  version: "2026.11.9"
   requires:
     bins:
       - wuji
@@ -54,7 +54,7 @@ Most commands accept one of three mutually exclusive selectors:
 
 ```bash
 --sn WG1KXXXXXXXXXXX            # By serial number (recommended, most precise)
---address 192.168.1.100:50000    # By address: ip:port for UDP, /dev/ttyACM0 for USB
+--address 192.168.1.100:50001    # By network address (ip:port); for USB devices, use --sn
 --handedness left                # By handedness left/right (two-handed setups)
 ```
 
@@ -179,7 +179,7 @@ wuji update --skills --yes    # Move them out without asking, with or without a 
 ## Install Shell Completions (Optional)
 
 ```bash
-# bash example; for other shells (zsh/fish/powershell/elvish), see wuji completions --help
+# bash example; for zsh or PowerShell, see wuji completions --help
 mkdir -p ~/.local/share/bash-completion/completions
 wuji completions bash > ~/.local/share/bash-completion/completions/wuji
 exec bash   # Takes effect in the current session
