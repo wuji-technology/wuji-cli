@@ -52,17 +52,45 @@ install_skills() {
 # 检查安装目录是否在 PATH 中，不在则追加到 shell 配置文件
 ensure_path() {
     case ":$PATH:" in
-        *:"$1":*) ;;
-        *)
-            line="export PATH=\"$1:\$PATH\""
-            for rc in ".bashrc" ".zshrc" ".profile"; do
-                rcfile="$HOME/$rc"
-                [ -f "$rcfile" ] && ! grep -qxF "$line" "$rcfile" && echo "$line" >> "$rcfile"
-            done
-            info "added $1 to PATH (~/.bashrc, ~/.zshrc, etc.)"
-            info "run 'source ~/.bashrc' or restart your shell to apply"
-            ;;
+        *:"$1":*) return 0 ;;
     esac
+
+    target=""
+    case "${SHELL:-}" in
+        */zsh) target="$HOME/.zshrc" ;;
+        */bash)
+            if [ "$(uname -s)" = "Darwin" ]; then
+                target="$HOME/.bash_profile"
+            else
+                target="$HOME/.bashrc"
+            fi
+            ;;
+        *) target="$HOME/.profile" ;;
+    esac
+
+    # 如果目标文件不存在，但存在其它已有的 profile 文件，优先沿用已有配置
+    if [ ! -f "$target" ]; then
+        if [ -f "$HOME/.profile" ]; then
+            target="$HOME/.profile"
+        elif [ -f "$HOME/.bashrc" ]; then
+            target="$HOME/.bashrc"
+        elif [ -f "$HOME/.bash_profile" ]; then
+            target="$HOME/.bash_profile"
+        elif [ -f "$HOME/.zshrc" ]; then
+            target="$HOME/.zshrc"
+        else
+            touch "$target"
+        fi
+    fi
+
+    line="export PATH=\"$1:\$PATH\""
+    if ! grep -qF "$1" "$target"; then
+        echo "" >> "$target"
+        echo "$line" >> "$target"
+    fi
+
+    info "added $1 to PATH ($target)"
+    info "run 'source $target' or restart your shell to apply"
 }
 
 # 探测本机对应的 release 目标三元组。
@@ -73,6 +101,14 @@ detect_target() {
         Linux:x86_64|Linux:amd64)   echo "x86_64-unknown-linux-gnu" ;;
         Linux:aarch64|Linux:arm64)  echo "aarch64-unknown-linux-gnu" ;;
         Darwin:aarch64|Darwin:arm64) echo "aarch64-apple-darwin" ;;
+        Darwin:x86_64|Darwin:amd64)
+            # 在 Apple Silicon 上，sysctl.proc_translated 为 1 表示进程处于 Rosetta 翻译模式
+            if [ "$(sysctl -in sysctl.proc_translated 2>/dev/null)" = "1" ]; then
+                echo "aarch64-apple-darwin"
+            else
+                error "Wuji CLI currently only supports Apple Silicon (arm64) on macOS"
+            fi
+            ;;
         *) error "unsupported platform: $os/$arch" ;;
     esac
 }

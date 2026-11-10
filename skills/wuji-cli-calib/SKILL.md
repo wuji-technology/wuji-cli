@@ -4,7 +4,7 @@ description: "Guide safe Wuji Glove calibration with the wuji CLI. Use when the 
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.26"
+  version: "2026.11.9"
 ---
 
 # Wuji CLI Calib
@@ -89,7 +89,7 @@ The mutually exclusive alternatives are:
 
 ```bash
 wuji calib hand-model --handedness left --jsonl
-wuji calib hand-model --address 192.168.1.100:50000 --jsonl
+wuji calib hand-model --address 192.168.1.100:50001 --jsonl
 ```
 
 Prefer `--sn`. An address target has no shared-access fallback when another program owns the direct device session. Use `--timeout-s <SECONDS>` only when the default 900-second overall deadline is unsuitable.

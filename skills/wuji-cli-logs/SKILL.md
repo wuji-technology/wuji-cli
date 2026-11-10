@@ -4,7 +4,7 @@ description: "Export, list, dump, and locate Wuji device logs using `wuji logs`.
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.26"
+  version: "2026.11.9"
   requires:
     bins:
       - wuji
@@ -15,11 +15,12 @@ metadata:
 
 - **Logs are local text files** written by Wuji SDK, Studio, stderr capture, and the CLI itself, stored under `~/.wuji/logs/`. The CLI discovers and processes these files, and writes its own operation records as `cli_*.jsonl`.
 - **Text sources**: `sdk_*.log`, `studio_*.log`, `stderr_*.log`, and `cli_<date>.jsonl` — the CLI's own record of the commands it runs (command line, exit code, duration, error). `wuji sub` and `wuji completions` write no operation records. Device communication dumps (`device_*.bin`) are excluded by default and gated behind `--with-dump`. `wuji logs export` bundles `sdk`, `studio`, `stderr`, and `cli` by default; pass `--source` to narrow the set. A `wuji doctor` run also records its report in the operation log, so a default bundle carries the checkup results. The operation log is redacted on export like every other text log; the local file itself stays as written, so it can be read directly while diagnosing.
-- **Export produces a single ZIP** containing the selected log files, a host snapshot (`host_snapshot.json`), doctor diagnosis results (`doctor_diagnosis.json` — the same envelope as `wuji doctor --json`, with host-environment checks and per-device results all under `checks`), device snapshots + flash history (`devices/<sn>_<ts>_device.json` / `_flash.jsonl`, when devices are found), matching hand model calibration recordings, and a manifest (`manifest.json`). The snapshot and diagnosis are included even when no log files are found.
+- **Export produces a single ZIP** containing the selected log files, a host snapshot (`host_snapshot.json`), doctor diagnosis results (`doctor_diagnosis.json` — the same envelope as `wuji doctor --json`, with host-environment checks and per-device results all under `checks`), collected device data (`devices/<sn>_<ts>_device.json` / `_flash.jsonl`), matching hand model calibration recordings, and a manifest (`manifest.json`). Device data covers a diagnostics snapshot and Flash history for Wuji Hand 2, and Flash history only for Wuji Glove—no glove snapshot. The host snapshot and diagnosis are included even when no log files are found.
 - **Calibration recordings are automatic**: runs from `~/.wuji/calibration/recordings/` that intersect the same inclusive local-date range are copied under `calibration-recordings/<run_id>/`. Partial or legacy runs with no `ended_at` are filtered as a single point at their local `started_at` date.
 - **Recording manifest compatibility**: new hand-model runs use `schema_version: 2` and `calibration_type: "hand_model"`; export also accepts legacy schema 1 / `"ik"` runs and preserves every source manifest unchanged.
 - **Redaction is layered**: credentials (JWT, Bearer Token, API Key, Token, License, Password, AWS Key) are always redacted; private data (username, user paths, hostname, SSID, IPv4, MAC) is redacted by default and can be disabled via `--no-redact` (internal builds only). Calibration `.mcap` files contain raw motion data and are never redacted.
-- **Exit codes**: 0 = success; 1 = any failure, including device diagnosis, log export, calibration recording, or device snapshot/flash collection failures. Recoverable items remain listed in the bundle manifest.
+- **Exit codes**: 0 = success; 1 = any failure, including device diagnosis, log export, calibration recording, or device snapshot/Flash collection errors. Export records unsupported Flash capability without treating it as a collection failure and omits the Flash history file. Recoverable items remain listed in the bundle manifest.
+- **Dump capability handling**: A scan-based `wuji logs dump` skips a Flash-only device if Flash history is unsupported. Explicitly targeting that device still fails. Other collection errors remain failures.
 
 ## Subcommands
 
@@ -28,7 +29,7 @@ metadata:
 | `wuji logs path`   | Print the log directory path                         |
 | `wuji logs list`   | List available log files with size and date          |
 | `wuji logs export` | Export logs, calibration recordings, snapshot, and diagnosis into a ZIP bundle |
-| `wuji logs dump`   | Collect a device-side diagnostic snapshot + flash history (Wuji Hand 2) |
+| `wuji logs dump`   | Collect a diagnostics snapshot + Flash history for Wuji Hand 2, or Flash history only for Wuji Glove (no snapshot) |
 
 ## Common Usage
 
@@ -54,7 +55,7 @@ wuji logs export --with-dump
 # Write the ZIP to a specific path
 wuji logs export -o /tmp/support-bundle.zip
 
-# Collect a device-side diagnostic snapshot + flash history (Wuji Hand 2)
+# Collect a diagnostics snapshot + Flash history for Wuji Hand 2, or Flash history only for Wuji Glove (no snapshot)
 wuji logs dump                          # scan all devices
 wuji logs dump --sn <SN>                # single device
 wuji logs dump --sn <SN> -o /tmp/dump   # write to a directory
@@ -109,8 +110,8 @@ unzip -l ~/Desktop/support.zip
 #   logs/YYYY-MM-DD/studio_*.log
 #   logs/YYYY-MM-DD/stderr_*.log
 #   logs/YYYY-MM-DD/cli_*.jsonl     (CLI operation records, included by default)
-#   devices/<sn>_<ts>_device.json   (device diagnostic snapshot, when devices found)
-#   devices/<sn>_<ts>_flash.jsonl   (device flash history, when devices found)
+#   devices/<sn>_<ts>_device.json   (Wuji Hand 2 diagnostics snapshot only)
+#   devices/<sn>_<ts>_flash.jsonl   (Wuji Hand 2 / Wuji Glove Flash history, if collected)
 #   calibration-recordings/<run_id>/manifest.json
 #   calibration-recordings/<run_id>/full.mcap
 #   calibration-recordings/<run_id>/steps/*.mcap  (completed steps only)

@@ -10,17 +10,25 @@ Wuji CLI is a command-line tool for Wuji devices — scan, probe connectivity, r
 
 ### Prerequisites
 
-- Ubuntu 22.04 LTS or later
+- **Linux**: Ubuntu 20.04 LTS or later (`x86_64`, `aarch64`)
+- **macOS**: macOS 11.0 (Big Sur) or later (`arm64` Apple Silicon)
+- **Windows**: Windows 10 Version 21H2 (Build 19044) or later, or Windows 11 (`x86_64`)
 - Devices must be on the same local network (UDP) or connected via USB
 
 ### Installation
 
 #### CLI Installation
 
-Use the install script:
+**Linux / macOS (Bash / Zsh)**:
 
 ```bash
 curl -fsSL https://get.wuji.tech/cli | bash
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+irm https://get.wuji.tech/cli.ps1 | iex
 ```
 
 #### Skills Installation
@@ -33,8 +41,16 @@ npx skills add wuji-technology/wuji-cli -g
 
 Alternatively, use the install script:
 
+**Linux / macOS**:
+
 ```bash
 curl -fsSL https://get.wuji.tech/skills | bash
+```
+
+**Windows**:
+
+```powershell
+irm https://get.wuji.tech/skills.ps1 | iex
 ```
 
 ### Verification
@@ -75,12 +91,42 @@ Global Options:
 
 ### Shell Completions
 
+Run once per shell, then restart the shell.
+
+**Bash** (Linux, or macOS with `bash-completion@2` from Homebrew):
+
 ```bash
+mkdir -p ~/.local/share/bash-completion/completions
 wuji completions bash > ~/.local/share/bash-completion/completions/wuji
-exec bash
 ```
 
-For zsh, fish, powershell, or elvish, substitute the shell name in the command above.
+**Zsh** (macOS default):
+
+```bash
+mkdir -p ~/.zfunc
+wuji completions zsh > ~/.zfunc/_wuji
+```
+
+Add these two lines to `~/.zshrc`, before the first `compinit` call:
+
+```zsh
+fpath=(~/.zfunc $fpath)
+autoload -U compinit && compinit
+```
+
+**PowerShell** (Windows PowerShell 5.1 or PowerShell 7):
+
+```powershell
+$compFile = "$HOME\.wuji\completions.ps1"
+wuji completions powershell | Out-File -Encoding utf8 $compFile -Force
+if (-not (Test-Path $PROFILE)) {
+  New-Item -ItemType File -Path $PROFILE -Force | Out-Null
+}
+if ((Get-Content $PROFILE) -notcontains ". `"$compFile`"") {
+  Add-Content $PROFILE "`n. `"$compFile`""
+}
+. $compFile
+```
 
 ## Documentation
 

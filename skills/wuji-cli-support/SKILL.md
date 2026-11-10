@@ -4,7 +4,7 @@ description: "Use when a customer needs guided troubleshooting or a support repo
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH, access to local logs and ZIP contents, and wuji-cli-doctor and wuji-cli-logs skills. Online issue matching requires access to docs.wuji.tech. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.10.26"
+  version: "2026.11.9"
   requires:
     bins:
       - wuji
@@ -88,7 +88,7 @@ wuji logs export --days <N> --with-dump --json
 
 `--with-dump` includes existing communication dump files in the selected range. It doesn't start a new recording or guarantee that dumps exist. Export scans all devices, even if a preceding doctor command targeted one SN.
 
-- **Device snapshots:** Export already includes snapshots and Flash history for supported devices, including Wuji Hand 2. Don't run a separate dump by default. If the export records a snapshot failure and a targeted retry has a concrete reason to succeed, use `wuji logs dump --sn <SN> --json`. List verified extra files separately because they aren't added to the ZIP. Don't repeat a failed collection without a relevant change in conditions.
+- **Device snapshots:** Export collects a diagnostics snapshot and Flash history for Wuji Hand 2, and Flash history only for Wuji Glove—no glove snapshot. Unsupported Flash capability is recorded, not counted as a collection failure, and produces no Flash history file. Actual collection errors remain failures. Don't run a separate dump by default. If the export records a snapshot or Flash collection error and a targeted retry has a concrete reason to succeed, use `wuji logs dump --sn <SN> --json`. A scan-based dump skips a Flash-only device with unsupported Flash history, but explicitly targeting it still fails. List verified extra files separately because they aren't added to the ZIP. Don't repeat a failed collection without a relevant change in conditions.
 - **Concurrent access:** Wuji devices generally support multiple readers and one writer. Keep the customer's control program running during read-only evidence collection. Don't infer an access conflict or degraded collection merely because another program is running. If a command actually reports an access conflict or collection failure, record the original error and collect the remaining evidence. Don't require stopping the customer's program to produce a report or assume every device, version, and operation supports concurrent access.
 - **Command failure:** Record the command, exit code, and error from stdout or stderr as appropriate. A failure doesn't abort the support workflow. Distinguish partial collection with a ZIP from failure to create a ZIP. After a correctable output-path or disk-space failure, a corrected export attempt is allowed. Never invent an attachment path or delete customer files to make room.
 
@@ -105,7 +105,7 @@ If ZIP creation failed, use already available command output and local text logs
 
 ### Step 5 — Check Official Issues and Actions
 
-Use the built-in issue list or the relevant product/version troubleshooting pages reached from <https://docs.wuji.tech/zh/> or <https://docs.wuji.tech/en/>. Read the actual official entry, not only a search snippet.
+Use the built-in issue list or the relevant product/version troubleshooting pages reached from <https://docs.wuji.tech/docs/zh> or <https://docs.wuji.tech/docs/en>. Read the actual official entry, not only a search snippet.
 
 A confirmed match requires all of the following:
 
