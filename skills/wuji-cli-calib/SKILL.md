@@ -4,7 +4,7 @@ description: "Guide safe Wuji Glove calibration with the wuji CLI. Use when the 
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.11.9"
+  version: "2026.11.23"
 ---
 
 # Wuji CLI Calib
@@ -16,7 +16,7 @@ Route calibration requests to the correct workflow and keep the human in the loo
 - For hand model calibration, follow the hand model workflow in this file before executing any command.
 - For tactile calibration, follow the tactile workflow in this file before executing any command.
 - Keep hand model and tactile semantics separate. Hand model calibration publishes a model for the current SDK user and hand side; tactile calibration trains and installs a contact model for a specific glove SN.
-- Hand model calibration attributes the result to the user the **device** is bound to, which is resolved after connecting. If another process switches the SDK user while `wuji calib hand-model` is scanning or connecting, the CLI reports the switch and attributes the calibration to the bound user; if that turns out to be `Default`, it stops with exit `5` before collecting any pose. Trust the user named in the command's own output over whatever `wuji user list` says afterwards.
+- Hand model calibration attributes the result to the user the **device** is bound to, which is resolved after connecting. If another process switches the SDK user while `wuji calib hand-model` is scanning or connecting, the CLI reports the switch and attributes the calibration to the bound user; if that turns out to be `Default`, it stops with exit `2` before collecting any pose. Trust the user named in the command's own output over whatever `wuji user list` says afterwards.
 
 ## Apply Shared Safety Rules
 
@@ -31,7 +31,7 @@ Route calibration requests to the correct workflow and keep the human in the loo
 ## Report the Outcome
 
 - Report the terminal status, selected device SN, model identity, and output artifact when the command provides them.
-- Distinguish command failure from user cancellation. Hand model calibration exit codes follow the `wuji user` convention: `0` success, `5` default-user protection, `9` cancellation, and `1` other failure. Hand model JSON/JSONL errors also carry a numeric `error.code`; a second Ctrl+C during tactile calibration exits immediately with code `130`.
+- Distinguish command failure from user cancellation. Calibration exit codes: `0` success, `2` default-user protection or a hand model run on a device that is not a Wuji Glove, `4` hand model connection failure or timeout, `130` cancellation (Ctrl+C or Esc; Ctrl+C ends the process by SIGINT after output is written, so `$?` is 130 and Python `subprocess` reports `-2`, while Esc or `q` at a prompt is a plain exit status; on Windows the process ends with `0xC000013A`), and `1` other failure. Hand model JSON/JSONL errors also carry a numeric `error.code`; a second Ctrl+C during tactile calibration exits immediately with code `130`.
 - Never infer model ownership from device SN. Use the identity fields returned by the selected calibration mode.
 
 ## Hand Model Calibration Workflow
@@ -43,7 +43,7 @@ Use this workflow to guide a human through `wuji calib hand-model` and monitor i
 Before starting, confirm all of the following:
 
 - The human intends to start hand model calibration now and is ready to perform hand poses.
-- For a directly watched Human TTY run, let the built-in prompt create or switch to the intended named user. For `--json` / `--jsonl` or redirected Human output, switch to a named user before starting; non-interactive output still rejects Default with exit `5`.
+- For a directly watched Human TTY run, let the built-in prompt create or switch to the intended named user. For `--json` / `--jsonl` or redirected Human output, switch to a named user before starting; non-interactive output still rejects Default with exit `2`.
 - The Human TTY flow includes fixed-size, colored left/right ANSI pose art when the terminal is at least 81 columns by 38 rows. A smaller terminal hides the art and tells the human to enlarge the window and restart calibration. The art belongs to the CLI and is not bundled with this public Skill; agent-guided JSONL runs use text instructions derived from feedback.
 - The human understands that success publishes `left_hand.urdf` or `right_hand.urdf` for the current SDK user and hot-reloads the hand model for online use. Recalibrating the same user and hand side replaces that stable model even when a different glove is used.
 - A Wuji Glove is powered and reachable over USB or the local network.
@@ -98,7 +98,7 @@ Use `--jsonl` for agent-guided calibration because it streams progress. Use huma
 
 ### Guide from JSONL
 
-Parse each stdout line as one JSON object. Expect `schema_version: 2`, `operation: "calibrate"`, and `calibration: "hand_model"`.
+Parse each stdout line as one JSON object. Expect `schema_version: 3`, `operation: "calibrate"`, and `calibration: "hand_model"`.
 
 Every progress event contains `feedback` with the same calibration fields exposed to the Python callback. There is no separate `guidance` or `presentation` object. Follow the Python example's derivation rules:
 
@@ -119,14 +119,14 @@ Avoid flooding the user. Speak when the pose or state changes, when diagnostics 
 Expect exactly one terminal JSONL event:
 
 - `event: "result"`, `status: "ok"`: report success and inspect `result.handedness`, `result.calibrated_urdf`, `result.sdk_user`, and `result.frames_per_pose` when present. Verify the reported user and hand side match the user's intent.
-- `event: "error"`, `status: "failed"`: report `error.kind`, `error.code`, and `error.message`; use any included `device` and `user` context. The process exit code matches `error.code` (`1` or `5`). A pose collection timeout after 120 seconds ends the entire calibration run; the CLI does not retry that pose.
-- `event: "cancelled"`, `status: "cancelled"`: report a clean user cancellation. Exit code is `9`.
+- `event: "error"`, `status: "failed"`: report `error.failure`, `error.reason`, `error.code`, and `error.message`; `error.kind` is the standard category (`failed`, `usage`, `refused`, `unavailable`, `internal`, or `cancelled`) and `error.hint` is empty when there is no suggestion. Use any included `device` and `user` context. The process exit code matches `error.code` (`2` for default-user protection or a device that is not a Wuji Glove, `4` for connection failure or timeout, otherwise `1`). A pose collection timeout after 120 seconds ends the entire calibration run; the CLI does not retry that pose.
+- `event: "cancelled"`, `status: "cancelled"`: report a clean user cancellation. Exit code is `130`. When the cancel came from Ctrl+C the process ends by SIGINT, so check for termination by SIGINT as well as status 130 (Python `subprocess` reports `-2`); when it came from Esc or `q` at a prompt it is a plain exit status 130. On Windows the process ends with `0xC000013A`.
 
 Also check the process exit code. Do not treat a stream that ends without a terminal event as success.
 
 ### Cancel Safely
 
-When the user asks to stop, send Ctrl+C once. The CLI asks the SDK operation to cancel, waits briefly for it to settle, releases the device, emits a `cancelled` event, and exits with code `9`. Keep waiting for that terminal event instead of immediately killing the process.
+When the user asks to stop, send Ctrl+C once. The CLI asks the SDK operation to cancel, waits briefly for it to settle, releases the device, emits a `cancelled` event, and exits with code `130` by ending on SIGINT once output is written (`$?` is 130; Python `subprocess` reports `-2`; on Windows the process ends with `0xC000013A`). Keep waiting for that terminal event instead of immediately killing the process.
 
 ### Resolve Common Failures
 
@@ -134,7 +134,7 @@ When the user asks to stop, send Ctrl+C once. The CLI asks the SDK operation to 
 - `no device found`: check power, USB, and local-network reachability; use `wuji devices --json` only for discovery troubleshooting.
 - `found N devices`: show the candidate SNs and ask the user to choose one; never select automatically.
 - `hand model calibration requires a connected Wuji Glove`: the selected device is the wrong type or lacks the calibration capability.
-- Connection failure with `--address`: retry with `--sn` or no selector if another program may hold the device session.
+- Connection failure / `session already in use`: hand-model calibration requires an exclusive device session (switching between `--address`, `--sn`, or no selector will not bypass it); wait for or close the program holding the device and retry the same device.
 - Pose timeout / `0x4101`: the current pose did not pass within 120 seconds and the whole run failed. Ask the human to adjust the pose or review the tutorial, then request confirmation before running the command again. `--timeout-s` is the separate overall command deadline and does not change the SDK's 120-second per-pose limit.
 - Disconnect during collection: restore connectivity and restart only after the user confirms.
 

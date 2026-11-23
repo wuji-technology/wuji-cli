@@ -4,7 +4,7 @@ description: "Run health self-checks on Wuji devices with wuji doctor: EMF disco
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.11.9"
+  version: "2026.11.23"
   requires:
     bins:
       - wuji
@@ -27,11 +27,13 @@ wuji doctor --sn <SN>                 # Read-only checkup on one device
 wuji doctor -v                        # Show all check items (passing items hidden by default)
 wuji doctor --json                    # The same information as the tree report, as structured JSON
 wuji doctor --list                    # List every diagnostic item (local query, no connection)
-wuji doctor ITEM [--sn <SN>]          # Run one specific item
+wuji doctor ITEM [--sn <SN> | --address <IP:PORT>]  # Run one specific item
 ```
 
 Without an ITEM, `wuji doctor` runs the `default` item (the read-only checkup). Every check
 `wuji doctor` can run is an item; `wuji doctor --list` lists them without connecting to a device.
+Running an active item with `--sn` or `--address` acquires the device exclusively first, and an SDK connection error keeps its
+standard exit code (for example `4` when the device is unreachable or the session is already held); the read-only `default` checkup records a device connection failure in the report and exits `1`.
 In JSON output, only items with side effects carry an `effects` field (read-only items such as
 `default` omit it): `moves_device` marks items that drive physical motion.
 
@@ -61,14 +63,12 @@ wuji doctor thumb_opposition --sn <SN> --json
 wuji doctor thumb_opposition --sn <SN> --jsonl
 ```
 
-In a terminal, omitting `--sn` for an active item opens a device selector filtered to applicable
-devices. Read the serial number in the selection before you continue. Outside a terminal
-(scripts, agents) pass `--sn` explicitly.
+In a human-readable terminal, omitting both `--sn` and `--address` for an active item opens a device selector filtered to applicable devices (including when one applicable device is found, due to the Exit option; if none is found, it exits 4 `no_device`). Read the serial number in the selection before you continue. Passing `--address` selects that endpoint directly. Outside a terminal or in `--json` / `--jsonl` mode, pass `--sn` or `--address` explicitly (omitting both exits 2 `missing_argument`).
 
 In human mode, an active item prints its preconditions, then waits for a `proceed? [y/N]` answer.
-It sends no drive command before you answer `y`; any other answer aborts and exits 9. The `--json`
+It sends no drive command before you answer `y`; any other answer aborts and exits 0 (declining is not a failure). The `--json`
 and `--jsonl` modes have no prompt: without an explicit authorization flag the item is rejected
-with exit code 2 before it connects, and the error message lists the preconditions to confirm.
+with exit code 2 and `reason: "missing_yes"` before it connects, and the error message lists the preconditions to confirm.
 When that error appears, stop and confirm each listed precondition with the user before
 re-running with the authorization flag the message names. Read-only items such as `default`
 never require it and silently accept it.
@@ -94,10 +94,11 @@ Human mode writes preconditions to stderr and the final report to stdout — a v
 per-finger table (`finger`, `status`, `force stages`) derived from the same `checks`. JSON and
 JSONL modes emit no preconditions.
 
-Exit codes: 0 = pass, 1 = fail / unsupported / timeout (including a finger skipped by the
-10-second approach limit), 2 = parameter error (unknown item, missing or inapplicable `--sn`),
-9 = the operator stopped the run (Ctrl+C, selector cancellation, or declining the confirmation
-prompt). If the command says another program uses the device, close
+Exit codes: 0 = pass, or the operator declined the confirmation prompt (declining is not a
+failure), 1 = fail / unsupported / timeout (including a finger skipped by the 10-second approach
+limit), 2 = parameter error (unknown item, missing `--sn`/`--address`, or inapplicable target), 4 = the device is
+unreachable or its session is held by another program, 130 = the operator stopped the run (Ctrl+C
+or selector cancellation). If the command says another program uses the device, close
 that program and retry with the same serial number.
 
 ### Device parameter changes

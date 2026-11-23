@@ -4,7 +4,7 @@ description: "Visualize live Wuji Hand 2 or Wuji Glove data with the official Re
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.11.9"
+  version: "2026.11.23"
   requires:
     bins:
       - wuji
@@ -13,18 +13,21 @@ metadata:
 
 ## Start a Viewer
 
-`viz` supports Wuji Hand 2 and Wuji Glove. Without `--sn`, it scans for both device types:
+`viz` supports Wuji Hand 2 and Wuji Glove. Without `--sn` or `--address`, it scans for both device types:
 
 ```bash
 wuji viz
 ```
 
-It counts both supported device types together and connects directly only when exactly one supported device is found. In an interactive terminal, multiple supported devices open a searchable selector whose summary shows SN and Device Type. The highlighted item shows Transport and Address on separate detail lines, plus USB Port or IP only when that field is present. Only the selected device is connected. Pressing Esc or Ctrl+C at the selector writes `Cancelled.` to stderr, exits with code 9, and does not connect or fall back to another device. A connection failure also does not fall back.
+It counts both supported device types together and connects directly only when exactly one supported device is found. In an interactive terminal, multiple supported devices open a searchable selector whose summary shows SN and Device Type. The highlighted item shows Transport and Address on separate detail lines, plus USB Port or IP only when that field is present. Only the selected device is connected. Pressing Esc or Ctrl+C at the selector writes `device selection cancelled` to stderr and exits with code 130 without connecting or falling back to another device. A connection failure also does not fall back.
 
-Use `wuji viz --sn <SN>` to select a specific supported device. Structured output and unattended invocations require `--sn` when multiple supported devices are present; they never open the selector.
+Use `--sn <SN>`, `--address <IP:PORT>`, or `--handedness` / `--type` (when narrowing to one device) to select a specific supported device. Structured output and unattended invocations never open the selector, so they require an explicit selector or filter that resolves to one device when multiple supported devices are present.
 
-The command prints the viewer URL and opens it in the default browser. It keeps the device session and
-Viewer running until stopped. When an Agent starts it from a chat, stop it by asking the Agent to stop
+The command prints the viewer URL and opens it in the default browser. After subscription setup,
+`--timeout` (default 10 seconds) limits the wait for the first valid frame. Hand 2 accepts joint or
+tactile data; Glove requires hand skeleton or EMF pose data, not tactile data alone. Expiry exits
+4 `no_data`. After the first valid frame, viewing continues until stopped or a runtime failure,
+without a total time limit. When an Agent starts it from a chat, stop it by asking the Agent to stop
 `viz`; do not tell the user to press Ctrl+C in the chat. Ctrl+C is appropriate only when the user is
 running `viz` directly in its own terminal.
 
@@ -58,9 +61,9 @@ After the Viewer is ready, stdout emits exactly one startup report and flushes i
 }
 ```
 
-Live sensor frames remain in the Viewer; they are not written to stdout. Progress, warnings, and errors remain on stderr. A failure before Viewer readiness leaves stdout empty and writes the normal structured error envelope to stderr. A later runtime failure keeps the startup report on stdout and writes the error envelope to stderr. Ctrl+C does not add a second structured record.
+Live sensor frames remain in the Viewer; they are not written to stdout. Progress, warnings, and errors remain on stderr. Once the command starts running, a failure before Viewer readiness leaves stdout empty and writes the normal structured error envelope to stderr. A later runtime failure keeps the startup report on stdout and writes the error envelope to stderr. Argument parsing and value validation failures happen before that stage: with `--json` or `--jsonl` they follow the general error contract and write the error envelope to stdout. Ctrl+C does not add a second structured record.
 
-The command does not record an RRD file and does not accept `--address` or `--handedness` as device selectors.
+The command does not record an RRD file; `--address` can target a device endpoint directly and `--handedness` filters applicable devices.
 
 The selected device determines the Viewer page:
 
@@ -94,9 +97,10 @@ Choose the invocation from the user's intent before starting the long-running pr
 
 1. **Select the device.** If the user names an SN, pass `--sn <SN>`. Otherwise, first run
    `wuji devices --json`, filter to `wuji_hand_2` and `wuji_glove`, and use an explicitly identified
-   single candidate. In an Agent or other non-interactive process, never start the selector without
-   `--sn`; if multiple supported devices remain, stop and ask the user which SN to use rather than
-   guessing. Do not use `--address` or `--handedness` as selectors.
+   single candidate. In an Agent or other non-interactive process, the interactive selector never
+   runs: target a device with `--sn`, `--address`, or a `--handedness` filter that narrows to one
+   applicable device (a single matching applicable device online is also auto-selected); if multiple
+   supported devices remain, stop and ask the user which SN to use rather than guessing.
 2. **Choose zeroing behavior by device.** For Wuji Glove or a Hand 2 already confirmed to have no
    tactile hardware, omit `--no-zero` and don't ask for unloaded-fingertip confirmation. For a Hand 2
    with tactile hardware or unknown tactile capability, add `--no-zero` when the user requests a

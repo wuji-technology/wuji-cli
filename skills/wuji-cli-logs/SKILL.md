@@ -4,7 +4,7 @@ description: "Export, list, dump, and locate Wuji device logs using `wuji logs`.
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.11.9"
+  version: "2026.11.23"
   requires:
     bins:
       - wuji

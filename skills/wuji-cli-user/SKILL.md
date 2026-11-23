@@ -1,10 +1,10 @@
 ---
 name: wuji-cli-user
-description: "Create, switch, list, show, rename, or delete wuji SDK user profiles, and export/import calibration bundles (hand model + tactile model) between machines, all via the `wuji user` CLI. These are named calibration profiles under ~/.wuji — NOT operating-system accounts — so use this skill (never edit code or touch OS users) for any request to delete a user, switch/change the current user, rename a user, create or list users, resolve the 'default user cannot calibrate' block, or move/inspect calibration data. Delete and import are destructive; the skill covers the safe, confirmation-first way to run them."
+description: "Create, switch, list, show, rename, or delete wuji SDK user profiles, and export/import calibration bundles (hand model + tactile model) between machines, all via the `wuji user` CLI. These are named calibration profiles under ~/.wuji — NOT operating-system accounts — so use this skill (never edit code or touch OS users) for any request to delete a user, switch/change the current user, rename a user, create or list users, resolve the 'default user cannot calibrate' block, or move/inspect calibration data. Deletion requires confirmation. Import creates a new profile and keeps the current profile unchanged."
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.11.9"
+  version: "2026.11.23"
   requires:
     bins:
       - wuji
@@ -31,18 +31,18 @@ A **user profile** is a local record of one person's calibration data under `~/.
 | `wuji user rename <old> <new>` | Rename; calibration data follows |
 | `wuji user delete [name] [--yes]` | Delete a profile and all its calibration data; omitting the name in a Human TTY opens a profile selector |
 | `wuji user export <path> [--force]` | Export the current profile's calibration bundle to a `.zip` |
-| `wuji user import <path> [--preview] [-y\|--yes] [--as <name>]` | Import a bundle into the current (or a new) profile |
+| `wuji user import <path> [--preview] [--as <name>]` | Create a new profile from a bundle without switching the current profile |
 
 Add `--help` to any subcommand for details.
 
 ## Safety (read before destructive actions)
 
 - **`delete` is irreversible** and removes all of a profile's calibration data. In a Human TTY, omitting the name opens a selector that excludes `Default`, marks the current profile, and defaults to `Cancel operation`; after selection, the CLI prints what will be removed, suggests `wuji user export` for a backup, and asks for a default-No confirmation. Do not select a profile on the user's behalf. Do **not** pass `--yes` unless the user has explicitly authorized deleting that specific profile; `--yes` requires the name to be present. `Default` cannot be deleted.
-- **`import` overwrites** the target profile's artifacts. Preview first with `--preview` (or read the interactive Cliclack preview) and relay the **source user, bundle version, contents, and any conflicts** before proceeding. In Human TTY mode, use the fixed-footer menus to choose whether to overwrite the current profile, create a new profile, or cancel; `--as <name>` selects the new-profile path up front. When the bundle comes from a different user and the target already has artifacts, the CLI backs them up under `calibration-import-backups/` before overwriting.
-- **A bundle containing a hand model cannot be imported into `Default`**: `Default` cannot hold hand model artifacts, so the CLI refuses (exit `5`) instead of succeeding with the model silently dropped. Import into a named profile with `--as <name>`, or `wuji user create <name> --switch` first. A tactile-only bundle still imports into `Default` normally.
-- **Import is not atomic.** If it fails partway, the profile can hold a mix of new and previous artifacts. The CLI says so, points at the backup directory when one was made, and tells the user to verify with `wuji user show <name>`. Relay that recovery path — do not retry blindly.
-- **Non-interactive modes require explicit consent**: in `--json`/`--jsonl` or without a TTY, use `--preview` for a read-only import preview or `-y`/`--yes` to apply the import; `delete` requires both an explicit profile name and `--yes`. Only add a confirmation flag after confirming the user's intent — never as a default.
-- **`export` never clobbers silently**: in Human TTY mode, exporting over an existing file asks for confirmation and defaults to No; non-interactive or structured output still requires `--force`. This includes a **directory** target whose auto-generated name collides. Exporting a profile with **no calibration data** fails and tells the user to complete a calibration first — nothing is written.
+- `import` always creates a new profile. It uses the name in the bundle unless `--as <name>` supplies another new name. It keeps the current profile and existing calibration data unchanged. Name conflicts ignore ASCII letter case. If the name exists, the command exits 2 with `reason: "object_exists"` and a `hint` on retrying with `--as`.
+- Use `--preview` to inspect the source user, bundle version, and contents without creating a profile. In a Human TTY, imports also show the preview, progress, and result, and never ask for confirmation or a new name. Import doesn't accept `-y` or `--yes` in any mode.
+- If import fails, the CLI removes the profile it created. If cleanup also fails, it exits 1, names the residual profile, and supplies a `wuji user delete <name> --yes` recovery command. Relay that command and obtain authorization before deleting the residual profile.
+- `export` requires `--force` to overwrite an existing file in every output mode, including Human TTY. It never asks for confirmation. This includes a directory target whose generated filename already exists. Exporting a profile with no calibration data fails without writing a bundle.
+- `delete` requires an explicit profile name and `--yes` outside Human TTY. Only add `--yes` after the user authorizes deleting that profile.
 - **`Default` is protected**: it cannot be deleted or renamed. Deleting the current profile resets the current user to `Default` (the CLI reports this).
 - Never choose among multiple profiles on the user's behalf. In a Human TTY, `wuji user switch` without a name opens a selector that includes `Default`, marks the current profile, and defaults to `Cancel operation`; let the user choose. Outside a TTY, supply the explicitly requested profile name. When a profile name is not found, run `wuji user list`, relay the available profiles, and ask which one to use.
 
@@ -59,21 +59,25 @@ If hand model calibration reports the default-user guidance (`create` / `switch`
 
 ## Exit Codes and JSON
 
-| Code | Meaning |
-| --- | --- |
-| 0 | Success (including a no-op switch to the current profile) |
-| 2 | Invalid user name |
-| 3 | User already exists |
-| 4 | User not found |
-| 5 | Default-user protection (delete/rename `Default`, or run hand model calibration as default) |
-| 6 | Bundle file not found |
-| 7 | Bundle invalid or incompatible version |
-| 8 | Export target already exists (use `--force`) |
-| 9 | Cancelled at confirmation |
+| Code | `reason` | Meaning |
+| --- | --- | --- |
+| 0 | | Success (including a no-op switch to the current profile) |
+| 0 | `operation_cancelled` | Cancelled at confirmation (human mode only; prints no error object) |
+| 1 | `sdk_error` | Other failure, such as no calibration data to export, or an SDK error with no finer classification |
+| 4 | `device_not_found` · `session_held` · `connection_lost` · `no_response` · `request_timeout` · `no_data` · `operation_in_progress` | Device or session unavailable: no matching device on the network, session held by another program, connect or request timed out, link dropped or no data, or an upgrade/calibration already running |
+| 3 | `joint_offline` · `dependency_missing` | Joint offline, or a required dependency is missing |
+| 2 | `access_not_supported` · `not_applicable` · `ambiguous_device` · `ambiguous_name` · `invalid_config` | Underlying SDK failure classified as a usage problem: unsupported operation, wrong device type, several candidates for the target, an ambiguous resource path, or invalid configuration. Same classification as every other command, so `reason` stays stable across commands |
+| 2 | `invalid_value` | Invalid user name |
+| 2 | `object_exists` | User already exists, or export target already exists (use `--force`) |
+| 2 | `object_not_found` | User not found, or bundle file not found |
+| 2 | `protected_object` | Default-user protection (delete/rename `Default`, or run hand model calibration as default) |
+| 2 | `invalid_input_file` | Bundle invalid or incompatible version |
+| 2 | `missing_yes` | `delete` without `--yes` outside an interactive terminal |
+| 130 | `interrupted` | Ctrl+C at an interactive prompt (a plain exit status; on Windows the process ends with `0xC000013A`) |
 
-With `--json`/`--jsonl`, success prints one document per command; errors print `{"error":{"code":N,"message":...}}`. Branch on `code` (and the process exit code), not on parsing the message text.
+With `--json`/`--jsonl`, success prints one document per command; errors print `{"error":{"code","kind","reason","message","hint"}}` on stdout, pretty-printed under `--json` and one line under `--jsonl`. Branch on `reason` (and the process exit code), not on parsing the message text.
 
-`create`, `switch`, `rename`, and `delete` all report `current_user` — the active profile after the action, whether or not this action changed it. Read it from the command's own output instead of following up with `list --json`; the field is always present, so no branching on "did this affect me" is needed. `rename` also reports `previous_name`, so a script can confirm which profile it just renamed.
+Successful `create`, `switch`, `rename`, `delete`, and `import` results include `current_user`, the active profile after the action. Read it from the result even when the active profile stays the same. `import --preview` uses a separate preview structure without `current_user`. `rename` also reports `previous_name`, so a script can confirm which profile it just renamed.
 
 ## Examples
 
@@ -83,6 +87,6 @@ wuji user create alice --description "Left-hand operator" --switch  # Create and
 wuji user show --json                              # Current profile's artifacts
 wuji user export ./alice.zip                       # Export current profile
 wuji user import ./alice.zip --preview             # Inspect a bundle without importing
-wuji user import ./alice.zip                       # Preview, then confirm import
+wuji user import ./alice.zip                       # Create the profile named in the bundle
 wuji user import ./alice.zip --as bob               # Import into a fresh profile
 ```
