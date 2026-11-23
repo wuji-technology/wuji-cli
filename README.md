@@ -55,11 +55,13 @@ irm https://get.wuji.tech/skills.ps1 | iex
 
 ### Verification
 
-Run `wuji devices` to check for discovered devices:
+Run `wuji device list` to check which devices are discovered and whether each one is reachable:
 
 ```bash
-wuji devices
+wuji device list
 ```
+
+`wuji devices` (alias of `wuji device list --no-probe`) only scans and never opens a session; `wuji ping` is an alias of `wuji device list`.
 
 ## Usage
 
@@ -69,8 +71,7 @@ The examples below cover common tasks. Run `wuji <command> --help` for all optio
 Usage: wuji [OPTIONS] [COMMAND]
 
 Commands:
-  devices      Scan and list devices
-  ping         Probe device connectivity
+  device       Discover devices and link state
   resources    List device parameters and subscribable topics
   get          Read a parameter
   set          Write a parameter

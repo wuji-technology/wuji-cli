@@ -4,7 +4,7 @@ description: "Upgrade Wuji device firmware with wuji upgrade: check which device
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.11.9"
+  version: "2026.11.23"
   requires:
     bins:
       - wuji
@@ -20,8 +20,9 @@ Every invocation is a **scope** (which devices) combined with an **action** (wha
 Scope (defaults to the only connected device):
 
 - `--all` — every discovered device (latest firmware only)
-- `--type <TYPE>` — every device of one type (matches `ping`'s Device Type, case-insensitive, e.g. `--type wuji_glove`)
-- `--sn` / `--address` / `--handedness` — one device, same selectors as other commands
+- `--type <TYPE>` — every device of one type (matches the Device Type column of `wuji device list`, case-insensitive, e.g. `--type wuji_glove`); online upgrades include all matching devices
+- `--sn` / `--address` — one device, same selectors as other commands
+- `--handedness <left|right>` — filters by side; flashing requires `--type` alongside it (passing `--handedness` without `--type` when flashing exits 2 `missing_argument`), while read-only `--check` and `--list` accept `--handedness` on its own (exiting 4 `no_device` if none match)
 
 Actions:
 
@@ -31,7 +32,7 @@ Actions:
 - `--file <PATH>` — flash a local firmware file
 - `-l` / `--list` — browse the firmware catalog, read-only
 
-A version only makes sense for one device type, so `--to`, `--file`, and `--list` require a single-type scope: `--type` or one device. `--all` always means "latest for each device".
+A version only makes sense for one device type, so `--to` and `--file` require a single-type scope: `--type` or one device. `--list` queries every device matching explicit selectors, including different types when filtering only by `--handedness`. Without selectors, `--list` requires exactly one device. `--all` always means "latest for each device" and cannot be combined with `--list`.
 
 ## Usage
 
@@ -164,4 +165,4 @@ wuji upgrade rollback --sn WH2KXXXXXXXXXX01 --yes --json   # Machine-readable re
 - `--sn` is required; rollback always targets a single device.
 - Hands whose tactile sensors are currently online cannot be rolled back: the request is rejected before the device is modified, and the report's `Status` is `failed` (safe to retry once resolved).
 - The rollback target is not selectable, and its version is not known before the operation completes. The confirmation prompt says so explicitly.
-- The report's `Status` is `ok`, `failed`, or `unknown`. `unknown` means the rollback did not reach a confirmed end state (part of the device could not be confirmed, the read-back did not verify the switch, or the post-rollback version could not be read back) — do **not** retry blindly (a successful retry would switch back to the original version); verify the actual version first with `wuji ping --sn <SN>`. A report is only `ok` when it carries the post-rollback version that was read back from the device.
+- The report's `Status` is `ok`, `failed`, or `unknown`. `unknown` means the rollback did not reach a confirmed end state (part of the device could not be confirmed, the read-back did not verify the switch, or the post-rollback version could not be read back) — do **not** retry blindly (a successful retry would switch back to the original version); verify the actual version first with `wuji device list --sn <SN>`. A report is only `ok` when it carries the post-rollback version that was read back from the device.

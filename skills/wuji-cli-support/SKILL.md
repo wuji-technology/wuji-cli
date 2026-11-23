@@ -4,7 +4,7 @@ description: "Use when a customer needs guided troubleshooting or a support repo
 compatibility: Requires Wuji CLI installed with the wuji executable available on PATH, access to local logs and ZIP contents, and wuji-cli-doctor and wuji-cli-logs skills. Online issue matching requires access to docs.wuji.tech. Run `wuji update --skills` first so these skills match the installed CLI version.
 metadata:
   author: wuji-technology
-  version: "2026.11.9"
+  version: "2026.11.23"
   requires:
     bins:
       - wuji
@@ -38,10 +38,10 @@ When identity or reachability evidence is missing, use the relevant command:
 
 ```bash
 wuji devices --json
-wuji ping --json
+wuji device list --json
 ```
 
-Use `--sn <SN>` for a known ping target. Record device type, SN, firmware, transport, and actual connection results when available. Distinguish discovery from successful connection. No discovery result doesn't prove that a previously reported device is offline.
+`wuji devices` only scans (alias of `wuji device list --no-probe`); `wuji device list` (alias `wuji ping`) also probes each device. Use `--sn <SN>` for a known target: it exits 0 when the device is `reachable`, 4 when it is offline, busy, or unroutable, and 3 on an address conflict; with `wuji devices` (`--no-probe`) exit 0 only means the device answered the scan, not that a session can be opened. Under `--json` / `--jsonl` that failure still prints one document: the report plus an `error` object (`code`, `kind`, `reason`, `message`, `hint`); read it from stdout, not stderr. Record device type, SN, firmware, transport, and `status`. Distinguish discovery from successful connection: a device listed by `wuji devices` may still be `busy` or `offline` in `wuji device list`. No discovery result doesn't prove that a previously reported device is offline.
 
 - **Wuji Hand 2:** Ask about freezes, communication loss, or enable/engage failures as relevant.
 - **Wuji Glove:** Ask about EMF disconnects or tactile anomalies as relevant.
